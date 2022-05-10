@@ -1,36 +1,38 @@
-#[derive(Debug)]
+use thiserror::Error;
+
+#[derive(Debug, Error)]
 pub enum BrowserError {
-    Reqwest(reqwest::Error),
-    ParserError(ParserError),
+    #[error("Request error: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("Parser error: {0}")]
+    ParserError(#[from] ParserError),
+    #[error("Nothing found")]
+    NotFound404,
 }
 
 pub type BrowserResult<T> = Result<T, self::BrowserError>;
 
-impl From<reqwest::Error> for BrowserError {
-    fn from(s: reqwest::Error) -> Self {
-        Self::Reqwest(s)
-    }
-}
-
-impl From<ParserError> for BrowserError {
-    fn from(s: ParserError) -> Self {
-        Self::ParserError(s)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ParserError {
+    #[error("Could not parse title")]
     Title,
+    #[error("Could not parse identifier")]
     Identifier,
+    #[error("Could not parse description")]
     Description,
-    Episode(EpisodeError),
-    Search(EpisodeError),
+    #[error("Could not parse episode: {0}")]
+    Episode(LinkParseError),
+    #[error("Could not parse search results: {0}")]
+    Search(LinkParseError),
 }
 
-#[derive(Debug)]
-pub enum EpisodeError {
+#[derive(Debug, Error)]
+pub enum LinkParseError {
+    #[error("Nothing found")]
     None,
+    #[error("No title")]
     Title,
+    #[error("No identifier")]
     Identifier,
 }
 pub type ParserResult<T> = Result<T, self::ParserError>;

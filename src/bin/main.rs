@@ -1,16 +1,12 @@
 use anime::{error::BrowserError, model::Identifier, Browser};
 use clap::Parser;
-
-#[derive(Debug)]
+use thiserror::Error;
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Invaid query or item not found")]
     NotFoundOrInvalidId,
-    BrowserError(BrowserError),
-}
-
-impl From<BrowserError> for Error {
-    fn from(source: BrowserError) -> Self {
-        Self::BrowserError(source)
-    }
+    #[error("Browser error: {0}")]
+    BrowserError(#[from] BrowserError),
 }
 
 #[derive(Parser, Debug)]
@@ -29,22 +25,28 @@ struct Search {
     pub ep: Option<usize>,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    let search = Search::parse();
-
+async fn run(search: Search) -> Result<(), Error> {
     let mut browser = Browser::new().unwrap();
 
     if let Some(identifier) = search.ident {
+        println!("Searching for {}\n", *identifier);
         println!("{}", browser.get_anime(&identifier).await?);
     } else if let Some(query) = search.search {
+        println!("Searching for keywords {}", query);
         let result = browser.search(&query).await?;
 
         for anime in result {
-            println!("{} (Id: {})", anime.1, anime.0);
+            println!("{} (ident: {})", anime.1, anime.0);
         }
     } else {
         print!("Please provide either --ident or --search");
     }
     Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    if let Err(e) = run(Search::parse()).await {
+        println!("{}", e);
+    }
 }

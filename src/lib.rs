@@ -1,5 +1,5 @@
 use easy_scraper::Pattern;
-use error::{BrowserResult, EpisodeError, ParserError, ParserResult};
+use error::{BrowserError, BrowserResult, LinkParseError, ParserError, ParserResult};
 use model::{Anime, Episode, Identifier};
 use reqwest::Client;
 
@@ -47,6 +47,10 @@ impl Browser {
                 None,
             )
             .await?;
+
+        if response == "404\n" {
+            return Err(BrowserError::NotFound404);
+        }
 
         self.parser.html = response;
 
@@ -165,23 +169,23 @@ impl Parser {
                 eps.push(Episode {
                     title: ep
                         .get("title")
-                        .ok_or(ParserError::Episode(EpisodeError::Title))?
+                        .ok_or(ParserError::Episode(LinkParseError::Title))?
                         .clone(),
                     series: ep
                         .get("identifier")
-                        .ok_or(ParserError::Episode(EpisodeError::Identifier))?
+                        .ok_or(ParserError::Episode(LinkParseError::Identifier))?
                         .parse()
                         .unwrap(),
                     n: ep
                         .get("number")
-                        .ok_or(ParserError::Episode(EpisodeError::Identifier))?
+                        .ok_or(ParserError::Episode(LinkParseError::Identifier))?
                         .clone(),
                 })
             }
 
             return Ok(eps);
         }
-        Err(ParserError::Episode(EpisodeError::None))
+        Err(ParserError::Episode(LinkParseError::None))
     }
 
     fn search(&mut self) -> ParserResult<Vec<(Identifier<String>, String)>> {
@@ -193,17 +197,17 @@ impl Parser {
                     Identifier::new(
                         anime
                             .get("identifier")
-                            .ok_or(ParserError::Search(EpisodeError::Identifier))?,
+                            .ok_or(ParserError::Search(LinkParseError::Identifier))?,
                     ),
                     anime
                         .get("title")
-                        .ok_or(ParserError::Search(EpisodeError::Title))?
+                        .ok_or(ParserError::Search(LinkParseError::Title))?
                         .to_string(),
                 ));
             }
             return Ok(series);
         }
-        Err(ParserError::Search(EpisodeError::None))
+        Err(ParserError::Search(LinkParseError::None))
     }
 }
 

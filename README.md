@@ -33,3 +33,5 @@ This is for WIP commits. However when looking through commit history you may wan
 
 ### main
 Acts like a squash for dev branch without squashing anything. Only put major commits here and use fast-forward merge.
+
+See [this answer on SO: dev branch](https://stackoverflow.com/questions/32826370/why-do-we-need-dev-branch#32826537) for details.
