@@ -25,3 +25,11 @@ Not yet. For a `0.1.0` I would like to have most ani-cli features to be working.
 1. View open issues or projects or create your own issue.
 2. Fork and code.
 3. Make a pull request explaining the changes.
+
+## Branch guide
+
+### dev
+This is for WIP commits. However when looking through commit history you may want to look only at major points when things were finally implemented. This is why main exists
+
+### main
+Acts like a squash for dev branch without squashing anything. Only put major commits here and use fast-forward merge.
