@@ -6,6 +6,8 @@ AniTUI attemts to have all the features of `ani-cli` and add some more interacti
 
 # Features
 
+**This project is being refactored so latest stable commit is [f4755d0b](https://github.com/m-kuzmin/ani-tui/tree/f4755d0bfd7e1874da82f0b6851e2e9b4e6f7b65)**
+
 You can already search and view basic info about an anime title.
 
 # Documentation
