@@ -2,17 +2,17 @@ use crate::core::Usecase;
 
 use super::{
     entities::{Anime, Episode},
-    repositories::AnimeRepository,
+    repositories::AnimeRepositoryContract,
 };
 
 pub struct SearchAnime {
-    repo: Box<dyn AnimeRepository + Sync + Send>,
+    repo: Box<dyn AnimeRepositoryContract + Sync + Send>,
 }
 
 impl SearchAnime {
     pub fn new<A>(repo: A) -> Self
     where
-        A: 'static + AnimeRepository + Sync + Send,
+        A: 'static + AnimeRepositoryContract + Sync + Send,
     {
         Self {
             repo: Box::new(repo),
@@ -26,18 +26,18 @@ impl Usecase for SearchAnime {
     type Return = Option<Vec<Anime>>;
 
     async fn call(&self, s: &Self::Params) -> Self::Return {
-        self.repo.search_anime(&s).await.ok()
+        self.repo.search_anime(&s).await
     }
 }
 
 pub struct GetEpisodesOfAnime {
-    repo: Box<dyn AnimeRepository + Send + Sync>,
+    repo: Box<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl GetEpisodesOfAnime {
     pub fn new<A>(repo: A) -> Self
     where
-        A: AnimeRepository + Send + Sync + 'static,
+        A: AnimeRepositoryContract + Send + Sync + 'static,
     {
         Self {
             repo: Box::new(repo),
@@ -56,13 +56,13 @@ impl Usecase for GetEpisodesOfAnime {
 }
 
 pub struct GetStreamingLink {
-    repo: Box<dyn AnimeRepository + Send + Sync>,
+    repo: Box<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl GetStreamingLink {
     pub fn new<A>(repo: A) -> Self
     where
-        A: AnimeRepository + Send + Sync + 'static,
+        A: AnimeRepositoryContract + Send + Sync + 'static,
     {
         Self {
             repo: Box::new(repo),
@@ -82,18 +82,17 @@ impl Usecase for GetStreamingLink {
 
 #[cfg(test)]
 mod tests {
-    use super::super::repositories::*;
-    use super::*;
+    use super::{super::repositories::MockAnimeRepositoryContract, *};
     use mockall::predicate::*;
 
     #[tokio::test]
     async fn should_search_for_anime_in_repository() {
-        let mut mock_repo = MockAnimeRepository::new();
+        let mut mock_repo = MockAnimeRepositoryContract::new();
         mock_repo
             .expect_search_anime()
             .times(1)
             .with(eq("some anime"))
-            .returning(|_| Ok(vec![Anime::new("some match", "")]));
+            .returning(|_| Some(vec![Anime::new("some match", "")]));
 
         let usecase = SearchAnime::new(mock_repo);
 
@@ -103,7 +102,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_list_of_eps_of_anime() {
-        let mut mock_repo = MockAnimeRepository::new();
+        let mut mock_repo = MockAnimeRepositoryContract::new();
 
         mock_repo
             .expect_get_anime_episodes()
@@ -122,7 +121,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_streaming_link_for_ep() {
-        let mut mock_repo = MockAnimeRepository::new();
+        let mut mock_repo = MockAnimeRepositoryContract::new();
 
         mock_repo
             .expect_get_streaming_link()

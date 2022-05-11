@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct Anime {
     pub title: String,
@@ -27,6 +25,3 @@ impl Episode {
         }
     }
 }
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct Link;
