@@ -51,7 +51,7 @@ impl Usecase for GetEpisodesOfAnime {
     type Return = Option<Vec<Episode>>;
 
     async fn call(&self, anime: &Self::Params) -> Self::Return {
-        self.repo.get_anime_episodes(anime).await.ok()
+        self.repo.get_anime_episodes(anime).await
     }
 }
 
@@ -76,7 +76,7 @@ impl Usecase for GetStreamingLink {
     type Return = Option<String>;
 
     async fn call(&self, ep: &Self::Params) -> Self::Return {
-        self.repo.get_streaming_link(ep).await.ok()
+        self.repo.get_streaming_link(ep).await
     }
 }
 
@@ -108,7 +108,7 @@ mod tests {
             .expect_get_anime_episodes()
             .times(1)
             .with(eq(Anime::new("some title", "some desc")))
-            .returning(|_| Ok(vec![Episode::new("some ep")]));
+            .returning(|_| Some(vec![Episode::new("some ep")]));
 
         let usecase = GetEpisodesOfAnime::new(mock_repo);
 
@@ -127,7 +127,8 @@ mod tests {
             .expect_get_streaming_link()
             .times(1)
             .with(eq(Episode::new("some title")))
-            .returning(|_| Ok(String::from("some link")));
+            .returning(|_| Some(String::from("some link")));
+
         let usecase = GetStreamingLink::new(mock_repo);
 
         let result = usecase.call(&Episode::new("some title")).await.unwrap();

@@ -1,8 +1,9 @@
-use std::error::Error;
-
 use easy_scraper::Pattern;
 
-use crate::{core::Model, features::watch_anime::domain::entities::Anime};
+use crate::{
+    core::Model,
+    features::watch_anime::domain::entities::{Anime, Episode},
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeModel {
@@ -15,6 +16,15 @@ impl From<AnimeModel> for Anime {
         Self {
             title: source.title,
             desc: source.desc,
+        }
+    }
+}
+
+impl From<&Anime> for AnimeModel {
+    fn from(source: &Anime) -> Self {
+        Self {
+            title: source.title.clone(),
+            desc: source.desc.clone(),
         }
     }
 }
@@ -56,6 +66,22 @@ pub struct EpisodeModel {
     pub title: String,
 }
 
+impl From<EpisodeModel> for Episode {
+    fn from(source: EpisodeModel) -> Self {
+        Self {
+            title: source.title,
+        }
+    }
+}
+
+impl From<&Episode> for EpisodeModel {
+    fn from(source: &Episode) -> Self {
+        Self {
+            title: source.title.clone(),
+        }
+    }
+}
+
 impl Model for EpisodeModel {
     fn from_html(html: &str) -> Option<Self> {
         let pattern = Pattern::new(
@@ -80,7 +106,7 @@ impl Model for EpisodeModel {
 
 #[cfg(test)]
 mod tests {
-    use std::{fmt::format, fs::File, io::Read};
+    use std::{fs::File, io::Read};
 
     use super::*;
 

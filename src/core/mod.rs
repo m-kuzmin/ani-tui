@@ -1,5 +1,3 @@
-use std::error::Error;
-
 #[async_trait]
 pub trait Usecase {
     type Params;
