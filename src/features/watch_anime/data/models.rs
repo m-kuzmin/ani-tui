@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::{
     core::Model,
-    features::watch_anime::domain::entities::{Anime, Episode},
+    features::watch_anime::domain::entities::{Anime, AnimeSearchItem, Episode},
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -50,6 +50,21 @@ impl Model for SearchResultModel {
             })
             .collect();
         Some(Self { anime_list })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct AnimeSearchItemModel {
+    pub title: String,
+    pub ident: String,
+}
+
+impl From<&AnimeSearchItem> for AnimeSearchItemModel {
+    fn from(source: &AnimeSearchItem) -> AnimeSearchItemModel {
+        AnimeSearchItemModel {
+            title: source.title.clone(),
+            ident: source.ident().to_string(),
+        }
     }
 }
 

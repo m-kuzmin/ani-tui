@@ -38,7 +38,7 @@ impl AnimeRepositoryContract for AnimeRepository {
         )
     }
 
-    async fn get_anime_episodes(&self, anime: &Anime) -> Option<Vec<Episode>> {
+    async fn get_anime_episodes(&self, anime: &AnimeSearchItem) -> Option<Vec<Episode>> {
         Some(
             self.gogo_play
                 .get_anime_episode_list(anime.into())
@@ -61,7 +61,7 @@ mod tests {
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
-        data::models::{AnimeModel, EpisodeModel, SearchResultModel},
+        data::models::{AnimeModel, AnimeSearchItemModel, EpisodeModel, SearchResultModel},
         domain::{
             entities::{Anime, AnimeSearchItem, Episode},
             repositories::AnimeRepositoryContract,
@@ -71,7 +71,7 @@ mod tests {
     use super::{super::datasources::MockGoGoPlayInterface, AnimeRepository};
 
     #[tokio::test]
-    async fn should_search_anime_on_gogoplay() {
+    async fn should_give_anime_search_resultrs_from_gogoplay() {
         let mut mock_datasource = MockGoGoPlayInterface::new();
         mock_datasource
             .expect_search_anime()
@@ -93,14 +93,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_get_anime_episodes_on_gogoplay() {
+    async fn should_give_anime_episodes_from_gogoplay() {
         let mut mock_datasource = MockGoGoPlayInterface::new();
         mock_datasource
             .expect_get_anime_episode_list()
             .times(1)
-            .with(eq(AnimeModel {
+            .with(eq(AnimeSearchItemModel {
                 title: String::from("some title"),
-                desc: String::from("some desc"),
+                ident: String::from("some-ident"),
             }))
             .returning(|_| {
                 Some(vec![EpisodeModel {
@@ -110,10 +110,7 @@ mod tests {
 
         let repo = AnimeRepository::new(mock_datasource);
         let result = repo
-            .get_anime_episodes(&Anime {
-                title: String::from("some title"),
-                desc: String::from("some desc"),
-            })
+            .get_anime_episodes(&AnimeSearchItem::new("some title", "some-ident"))
             .await
             .unwrap();
 
@@ -126,7 +123,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_get_streaming_link_on_gogoplay() {
+    async fn should_give_streaming_link_from_gogoplay() {
         let mut mock_datasource = MockGoGoPlayInterface::new();
 
         mock_datasource

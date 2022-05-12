@@ -47,7 +47,7 @@ impl GetEpisodesOfAnime {
 
 #[async_trait]
 impl Usecase for GetEpisodesOfAnime {
-    type Params = Anime;
+    type Params = AnimeSearchItem;
     type Return = Option<Vec<Episode>>;
 
     async fn call(&self, anime: &Self::Params) -> Self::Return {
@@ -118,13 +118,13 @@ mod tests {
         mock_repo
             .expect_get_anime_episodes()
             .times(1)
-            .with(eq(Anime::new("some title", "some desc")))
+            .with(eq(AnimeSearchItem::new("some title", "some-ident")))
             .returning(|_| Some(vec![Episode::new("some ep")]));
 
         let usecase = GetEpisodesOfAnime::new(mock_repo);
 
         let result = usecase
-            .call(&Anime::new("some title", "some desc"))
+            .call(&AnimeSearchItem::new("some title", "some-ident"))
             .await
             .unwrap();
         assert_eq!(vec![Episode::new("some ep")], result);

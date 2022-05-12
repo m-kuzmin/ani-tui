@@ -1,6 +1,6 @@
 use crate::core::Model;
 
-use super::models::{AnimeModel, EpisodeModel, SearchResultModel};
+use super::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel};
 pub struct GoGoPlayDataSource {
     client: Box<dyn WebClient + Send + Sync>,
 }
@@ -20,7 +20,10 @@ impl GoGoPlayDataSource {
 #[async_trait]
 pub trait GoGoPlayInterface {
     async fn search_anime(&self, title: &str) -> Option<SearchResultModel>;
-    async fn get_anime_episode_list(&self, anime: AnimeModel) -> Option<Vec<EpisodeModel>>;
+    async fn get_anime_episode_list(
+        &self,
+        anime: AnimeSearchItemModel,
+    ) -> Option<Vec<EpisodeModel>>;
     async fn get_streaming_link(&self, ep: &EpisodeModel) -> Option<String>;
 }
 
@@ -37,7 +40,10 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
         SearchResultModel::from_html(&html)
     }
 
-    async fn get_anime_episode_list(&self, anime: AnimeModel) -> Option<Vec<EpisodeModel>> {
+    async fn get_anime_episode_list(
+        &self,
+        anime: AnimeSearchItemModel,
+    ) -> Option<Vec<EpisodeModel>> {
         todo!()
     }
 

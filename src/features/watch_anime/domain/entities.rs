@@ -1,15 +1,19 @@
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeSearchItem {
     pub title: String,
-    ident: String,
+    _ident: String,
 }
 
 impl AnimeSearchItem {
     pub fn new(title: &str, ident: &str) -> Self {
         Self {
             title: title.to_string(),
-            ident: ident.to_string(),
+            _ident: ident.to_string(),
         }
+    }
+
+    pub fn ident(&self) -> &str {
+        &self._ident
     }
 }
 
