@@ -24,13 +24,14 @@ impl AnimeRepository {
 
 #[async_trait]
 impl AnimeRepositoryContract for AnimeRepository {
-    async fn search_anime(&self, query: &str) -> Option<Vec<Anime>> {
+    async fn search_anime(&self, query: &str) -> Option<Vec<String>> {
         Some(
             self.gogo_play
                 .search_anime(query)
                 .await?
+                .anime_list
                 .into_iter()
-                .map(|model| Anime::from(model))
+                .map(|model| model.0)
                 .collect(),
         )
     }
@@ -58,7 +59,7 @@ mod tests {
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
-        data::models::{AnimeModel, EpisodeModel},
+        data::models::{AnimeModel, EpisodeModel, SearchResultModel},
         domain::{
             entities::{Anime, Episode},
             repositories::AnimeRepositoryContract,
@@ -75,16 +76,15 @@ mod tests {
             .times(1)
             .with(eq("some search"))
             .returning(|_| {
-                Some(vec![AnimeModel {
-                    title: String::from("some anime"),
-                    desc: String::from("some desc"),
-                }])
+                Some(SearchResultModel {
+                    anime_list: vec![("some anime".to_string(), "some-ident".to_string())],
+                })
             });
 
         let repo = AnimeRepository::new(mock_datasource);
         let result = repo.search_anime("some search").await.unwrap();
 
-        assert_eq!(result, vec![Anime::new("some anime", "some desc")]);
+        assert_eq!(result, vec![String::from("some anime")]);
     }
 
     #[tokio::test]

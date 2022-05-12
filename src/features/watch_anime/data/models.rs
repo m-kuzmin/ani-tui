@@ -1,9 +1,57 @@
 use easy_scraper::Pattern;
+use regex::Regex;
 
 use crate::{
     core::Model,
     features::watch_anime::domain::entities::{Anime, Episode},
 };
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct SearchResultModel {
+    pub anime_list: Vec<(String, String)>,
+}
+
+impl Model for SearchResultModel {
+    fn from_html(html: &str) -> Option<Self> {
+        let pattern = Pattern::new(
+            r#"
+<div class="video_player followed  default">
+    <ul class="listing items">
+        <li class="video-block ">
+            <a href="/videos/{{ident}}-episode-{{_}}">
+                <div class="name">
+                  {{title}}
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+"#,
+        )
+        .unwrap();
+
+        let remove_ep_number_from_title = Regex::new(r"(?m)(.+?)(?: Episode \d+)?$").unwrap();
+
+        let anime_list = pattern
+            .matches(html)
+            .into_iter()
+            .map(|m| {
+                let title = if let Some(cap) = remove_ep_number_from_title.captures(&m["title"]) {
+                    if let Some(m) = cap.get(1) {
+                        m.as_str().to_string()
+                    } else {
+                        m["title"].clone()
+                    }
+                } else {
+                    m["title"].clone()
+                };
+                let link = m["ident"].clone();
+                (title, link)
+            })
+            .collect();
+        Some(Self { anime_list })
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeModel {
@@ -114,12 +162,36 @@ mod tests {
         let mut content = String::new();
         File::open(format!("tests/fixtures/{}", file))
             .unwrap()
-            .read_to_string(&mut content);
+            .read_to_string(&mut content)
+            .unwrap();
         content
     }
 
     #[test]
-    fn should_parse_html_to_anime_model() {
+    fn should_parse_gogoplay_search_page_to_search_result_model() {
+        let html = fixture("search.html");
+        let result = SearchResultModel::from_html(&html).unwrap();
+
+        assert_eq!(
+            result,
+            SearchResultModel {
+                anime_list: vec![
+                    (String::from("Some Anime"), String::from("some-anime")),
+                    (
+                        String::from("Some Other Anime"),
+                        String::from("some-unmatching-link")
+                    ),
+                    (
+                        String::from("This dark Episode: Doesnt end with ep number"),
+                        String::from("break-follow-ep")
+                    )
+                ]
+            }
+        )
+    }
+
+    #[test]
+    fn should_parse_ep_html_to_anime_model() {
         let html = fixture("some-anime-episode-1.html");
         let result = AnimeModel::from_html(&html).unwrap();
 
@@ -133,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_html_to_episode_model() {
+    fn should_parse_ep_html_to_episode_model() {
         let html = fixture("some-anime-episode-1.html");
 
         let result = EpisodeModel::from_html(&html).unwrap();

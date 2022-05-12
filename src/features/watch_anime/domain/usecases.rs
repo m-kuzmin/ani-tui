@@ -23,7 +23,7 @@ impl SearchAnime {
 #[async_trait]
 impl Usecase for SearchAnime {
     type Params = String;
-    type Return = Option<Vec<Anime>>;
+    type Return = Option<Vec<String>>;
 
     async fn call(&self, s: &Self::Params) -> Self::Return {
         self.repo.search_anime(&s).await
@@ -92,12 +92,12 @@ mod tests {
             .expect_search_anime()
             .times(1)
             .with(eq("some anime"))
-            .returning(|_| Some(vec![Anime::new("some match", "")]));
+            .returning(|_| Some(vec![String::from("some match")]));
 
         let usecase = SearchAnime::new(mock_repo);
 
         let result = usecase.call(&"some anime".to_string()).await.unwrap();
-        assert_eq!(&vec![Anime::new("some match", "")], &result);
+        assert_eq!(&vec![String::from("some match")], &result);
     }
 
     #[tokio::test]
