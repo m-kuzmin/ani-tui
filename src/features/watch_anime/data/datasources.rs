@@ -1,6 +1,6 @@
-use crate::core::Model;
-
 use super::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel};
+use crate::core::Model;
+use crate::core::WebClient;
 pub struct GoGoPlayDataSource {
     client: Box<dyn WebClient + Send + Sync>,
 }
@@ -59,17 +59,11 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
     }
 }
 
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait WebClient {
-    async fn get(&self, url: &str, query_param: Option<Vec<(String, String)>>) -> Option<String>;
-}
-
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Read};
-
+    use crate::core::MockWebClient;
     use mockall::predicate::*;
+    use std::{fs::File, io::Read};
 
     use super::*;
     fn fixture(file: &str) -> String {
