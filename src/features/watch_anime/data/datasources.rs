@@ -44,11 +44,18 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
         &self,
         anime: AnimeSearchItemModel,
     ) -> Option<Vec<EpisodeModel>> {
-        todo!()
+        let html = self
+            .client
+            .get(
+                &format!("https://goload.pro/videos/{}-episode-1", anime.ident),
+                None,
+            )
+            .await?;
+        Some(Vec::<EpisodeModel>::from_html(&html)?)
     }
 
     async fn get_streaming_link(&self, ep: &EpisodeModel) -> Option<String> {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -69,17 +76,17 @@ mod tests {
         let mut content = String::new();
         File::open(format!("tests/fixtures/{}", file))
             .unwrap()
-            .read_to_string(&mut content);
+            .read_to_string(&mut content)
+            .unwrap();
         content
     }
 
     #[tokio::test]
-    async fn should_search_for_anime_on_gogoplay() {
+    async fn should_give_anime_list_from_search_query_on_gogoplay() {
         let mut mock_client = MockWebClient::new();
         mock_client
             .expect_get()
             .times(1)
-            // https://goload.pro/search.html?keyword=kemo
             .with(
                 eq("https://goload.pro/search.html"),
                 eq(Some(vec![(
@@ -107,6 +114,37 @@ mod tests {
                     ),
                 ]
             }
+        );
+    }
+
+    #[tokio::test]
+    async fn should_give_list_of_eps_for_anime_from_gogoplay() {
+        let mut mock_client = MockWebClient::new();
+        mock_client
+            .expect_get()
+            .times(1)
+            .with(
+                eq("https://goload.pro/videos/some-ident-episode-1"),
+                eq(None),
+            )
+            .returning(|_, _| Some(fixture("some-anime-episode-1.html")));
+
+        let datasource = GoGoPlayDataSource::new(mock_client);
+
+        let result = datasource
+            .get_anime_episode_list(AnimeSearchItemModel {
+                title: String::from("some title"),
+                ident: String::from("some-ident"),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                EpisodeModel::new("Episode 2 title", "some-ident", 2),
+                EpisodeModel::new("Episode 1 title", "some-ident", 1)
+            ]
         );
     }
 }

@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_give_anime_episodes_from_gogoplay() {
+    async fn should_give_anime_episode_list_from_gogoplay() {
         let mut mock_datasource = MockGoGoPlayInterface::new();
         mock_datasource
             .expect_get_anime_episode_list()
@@ -103,9 +103,10 @@ mod tests {
                 ident: String::from("some-ident"),
             }))
             .returning(|_| {
-                Some(vec![EpisodeModel {
-                    title: String::from("some episode"),
-                }])
+                Some(vec![
+                    EpisodeModel::new("Episode 2 title", "some-ident", 2),
+                    EpisodeModel::new("Episode 1 title", "some-ident", 1),
+                ])
             });
 
         let repo = AnimeRepository::new(mock_datasource);
@@ -116,9 +117,10 @@ mod tests {
 
         assert_eq!(
             result,
-            vec![Episode {
-                title: String::from("some episode"),
-            }]
+            vec![
+                Episode::new("Episode 2 title", "some-ident", 2),
+                Episode::new("Episode 1 title", "some-ident", 1)
+            ]
         );
     }
 
@@ -129,17 +131,15 @@ mod tests {
         mock_datasource
             .expect_get_streaming_link()
             .times(1)
-            .with(eq(EpisodeModel {
-                title: String::from("some title"),
-            }))
-            .returning(|_| Some(String::from("some link")));
+            .with(eq(EpisodeModel::new("some title", "some-ident", 1)))
+            .returning(|_| Some(String::from("some/link")));
 
         let repo = AnimeRepository::new(mock_datasource);
         let result = repo
-            .get_streaming_link(&Episode::new("some title"))
+            .get_streaming_link(&Episode::new("some title", "some-ident", 1))
             .await
             .unwrap();
 
-        assert_eq!(&result, "some link");
+        assert_eq!(&result, "some/link");
     }
 }

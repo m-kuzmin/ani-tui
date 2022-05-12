@@ -127,43 +127,66 @@ impl Model for AnimeModel {
 #[derive(Debug, PartialEq, Eq)]
 pub struct EpisodeModel {
     pub title: String,
+    pub ident: String,
+    pub ep_number: usize,
 }
 
-impl From<EpisodeModel> for Episode {
-    fn from(source: EpisodeModel) -> Self {
+impl EpisodeModel {
+    pub fn new(title: &str, ident: &str, ep_number: usize) -> Self {
         Self {
-            title: source.title,
+            title: title.to_string(),
+            ident: ident.to_string(),
+            ep_number,
         }
     }
 }
 
-impl From<&Episode> for EpisodeModel {
-    fn from(source: &Episode) -> Self {
-        Self {
-            title: source.title.clone(),
-        }
-    }
-}
-
-impl Model for EpisodeModel {
+impl Model for Vec<EpisodeModel> {
     fn from_html(html: &str) -> Option<Self> {
         let pattern = Pattern::new(
             r#"
 <div class="video-info">
   <div class="video-info-left">
-    <h1>{{ep_title}}</h1>
+    <ul class="listing items lists">
+      <li class="video-block ">
+        <a href="/videos/{{ident}}-episode-{{ep_number}}">
+          <div class="name">
+            {{title}}
+          </div>
+        </a>
+      </li>
+    </ul>
   </div>
 </div>"#,
         )
         .unwrap();
 
-        if let Some(m) = pattern.matches(html).get(0) {
-            Some(Self {
-                title: m["ep_title"].clone(),
-            })
-        } else {
-            None
-        }
+        let matches = pattern.matches(html);
+
+        Some(
+            matches
+                .into_iter()
+                .map(|cap| -> EpisodeModel {
+                    EpisodeModel::new(
+                        &cap["title"],
+                        &cap["ident"],
+                        cap["ep_number"].parse().unwrap_or_default(),
+                    )
+                })
+                .collect(),
+        )
+    }
+}
+
+impl From<EpisodeModel> for Episode {
+    fn from(source: EpisodeModel) -> Self {
+        Self::new(&source.title, &source.ident, source.ep_number)
+    }
+}
+
+impl From<&Episode> for EpisodeModel {
+    fn from(source: &Episode) -> Self {
+        Self::new(&source.title, &source.ident(), source.ep_number)
     }
 }
 
@@ -206,6 +229,20 @@ mod tests {
     }
 
     #[test]
+    fn should_parse_ep_html_to_episode_list() {
+        let html = fixture("some-anime-episode-1.html");
+        let result = Vec::<EpisodeModel>::from_html(&html).unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                EpisodeModel::new("Episode 2 title", "some-ident", 2),
+                EpisodeModel::new("Episode 1 title", "some-ident", 1)
+            ]
+        );
+    }
+
+    #[test]
     fn should_parse_ep_html_to_anime_model() {
         let html = fixture("some-anime-episode-1.html");
         let result = AnimeModel::from_html(&html).unwrap();
@@ -215,20 +252,6 @@ mod tests {
             AnimeModel {
                 title: String::from("Anime title"),
                 desc: String::from("Multiline\n\ndescription")
-            }
-        );
-    }
-
-    #[test]
-    fn should_parse_ep_html_to_episode_model() {
-        let html = fixture("some-anime-episode-1.html");
-
-        let result = EpisodeModel::from_html(&html).unwrap();
-
-        assert_eq!(
-            result,
-            EpisodeModel {
-                title: String::from("Episode title"),
             }
         );
     }

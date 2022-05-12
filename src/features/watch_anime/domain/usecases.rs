@@ -119,7 +119,7 @@ mod tests {
             .expect_get_anime_episodes()
             .times(1)
             .with(eq(AnimeSearchItem::new("some title", "some-ident")))
-            .returning(|_| Some(vec![Episode::new("some ep")]));
+            .returning(|_| Some(vec![Episode::new("some ep", "some-ident", 1)]));
 
         let usecase = GetEpisodesOfAnime::new(mock_repo);
 
@@ -127,7 +127,7 @@ mod tests {
             .call(&AnimeSearchItem::new("some title", "some-ident"))
             .await
             .unwrap();
-        assert_eq!(vec![Episode::new("some ep")], result);
+        assert_eq!(vec![Episode::new("some ep", "some-ident", 1)], result);
     }
 
     #[tokio::test]
@@ -137,12 +137,15 @@ mod tests {
         mock_repo
             .expect_get_streaming_link()
             .times(1)
-            .with(eq(Episode::new("some title")))
+            .with(eq(Episode::new("some title", "some-ident", 1)))
             .returning(|_| Some(String::from("some link")));
 
         let usecase = GetStreamingLink::new(mock_repo);
 
-        let result = usecase.call(&Episode::new("some title")).await.unwrap();
+        let result = usecase
+            .call(&Episode::new("some title", "some-ident", 1))
+            .await
+            .unwrap();
 
         assert_eq!(&"some link", &result);
     }
