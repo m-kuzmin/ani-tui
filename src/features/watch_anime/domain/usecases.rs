@@ -1,7 +1,7 @@
 use crate::core::Usecase;
 
 use super::{
-    entities::{Anime, Episode},
+    entities::{Anime, AnimeSearchItem, Episode},
     repositories::AnimeRepositoryContract,
 };
 
@@ -23,7 +23,7 @@ impl SearchAnime {
 #[async_trait]
 impl Usecase for SearchAnime {
     type Params = String;
-    type Return = Option<Vec<String>>;
+    type Return = Option<Vec<AnimeSearchItem>>;
 
     async fn call(&self, s: &Self::Params) -> Self::Return {
         self.repo.search_anime(&s).await
@@ -92,12 +92,23 @@ mod tests {
             .expect_search_anime()
             .times(1)
             .with(eq("some anime"))
-            .returning(|_| Some(vec![String::from("some match")]));
+            .returning(|_| {
+                Some(vec![AnimeSearchItem::new(
+                    "some matching title",
+                    "hidden ident originating in model",
+                )])
+            });
 
         let usecase = SearchAnime::new(mock_repo);
 
         let result = usecase.call(&"some anime".to_string()).await.unwrap();
-        assert_eq!(&vec![String::from("some match")], &result);
+        assert_eq!(
+            &vec![AnimeSearchItem::new(
+                "some matching title",
+                "hidden ident originating in model"
+            )],
+            &result
+        );
     }
 
     #[tokio::test]

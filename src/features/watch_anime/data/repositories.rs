@@ -1,3 +1,5 @@
+use crate::features::watch_anime::domain::entities::AnimeSearchItem;
+
 use super::{
     super::domain::{
         entities::{Anime, Episode},
@@ -24,14 +26,14 @@ impl AnimeRepository {
 
 #[async_trait]
 impl AnimeRepositoryContract for AnimeRepository {
-    async fn search_anime(&self, query: &str) -> Option<Vec<String>> {
+    async fn search_anime(&self, query: &str) -> Option<Vec<AnimeSearchItem>> {
         Some(
             self.gogo_play
                 .search_anime(query)
                 .await?
                 .anime_list
                 .into_iter()
-                .map(|model| model.0)
+                .map(|(title, ident)| AnimeSearchItem::new(&title, &ident))
                 .collect(),
         )
     }
@@ -61,7 +63,7 @@ mod tests {
     use crate::features::watch_anime::{
         data::models::{AnimeModel, EpisodeModel, SearchResultModel},
         domain::{
-            entities::{Anime, Episode},
+            entities::{Anime, AnimeSearchItem, Episode},
             repositories::AnimeRepositoryContract,
         },
     };
@@ -84,7 +86,10 @@ mod tests {
         let repo = AnimeRepository::new(mock_datasource);
         let result = repo.search_anime("some search").await.unwrap();
 
-        assert_eq!(result, vec![String::from("some anime")]);
+        assert_eq!(
+            result,
+            vec![AnimeSearchItem::new("some anime", "some-ident")]
+        );
     }
 
     #[tokio::test]
