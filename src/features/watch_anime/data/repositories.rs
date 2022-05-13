@@ -1,10 +1,7 @@
 use crate::features::watch_anime::domain::entities::AnimeSearchItem;
 
 use super::{
-    super::domain::{
-        entities::{Anime, Episode},
-        repositories::AnimeRepositoryContract,
-    },
+    super::domain::{entities::Episode, repositories::AnimeRepositoryContract},
     datasources::GoGoPlayInterface,
     models::EpisodeModel,
 };
@@ -61,9 +58,9 @@ mod tests {
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
-        data::models::{AnimeModel, AnimeSearchItemModel, EpisodeModel, SearchResultModel},
+        data::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel},
         domain::{
-            entities::{Anime, AnimeSearchItem, Episode},
+            entities::{AnimeSearchItem, Episode},
             repositories::AnimeRepositoryContract,
         },
     };

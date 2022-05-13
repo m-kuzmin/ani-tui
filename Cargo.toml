@@ -21,3 +21,4 @@ openssl = { version = "0.10", features = ["vendored"] }
 
 [dev-dependencies]
 mockall = "0.11.0"
+mockall_double = "0.2.1"

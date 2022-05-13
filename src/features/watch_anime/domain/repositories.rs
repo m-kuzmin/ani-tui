@@ -1,5 +1,4 @@
-use super::entities::{Anime, AnimeSearchItem, Episode};
-use std::error::Error;
+use super::entities::{AnimeSearchItem, Episode};
 
 #[cfg_attr(test, automock)]
 #[async_trait]

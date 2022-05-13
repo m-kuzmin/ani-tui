@@ -11,8 +11,4 @@ pub trait Model {
         Self: Sized;
 }
 
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait WebClient {
-    async fn get(&self, url: &str, query_param: Option<Vec<(String, String)>>) -> Option<String>;
-}
+pub mod delivery_mechanisms;

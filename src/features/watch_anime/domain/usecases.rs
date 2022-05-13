@@ -1,7 +1,7 @@
 use crate::core::Usecase;
 
 use super::{
-    entities::{Anime, AnimeSearchItem, Episode},
+    entities::{AnimeSearchItem, Episode},
     repositories::AnimeRepositoryContract,
 };
 
