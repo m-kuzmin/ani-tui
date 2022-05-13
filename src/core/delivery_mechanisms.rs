@@ -1,7 +1,9 @@
+use std::cell::RefCell;
+
+#[cfg_attr(test, double)]
+use super::Cache;
 #[cfg(not(test))]
 use reqwest::Client;
-
-use std::collections::HashMap;
 
 type Link = (String, QueryParams);
 type QueryParams = Option<Vec<(String, String)>>;
@@ -14,20 +16,29 @@ pub trait WebClient {
 
 pub struct CachedWebClient {
     client: Client,
-    cache: WebCache<Link, String>,
+    cache: Mutex<RefCell<Cache<Link, String>>>,
 }
 
 impl CachedWebClient {
-    pub fn new(client: Client, cache: WebCache<Link, String>) -> Self {
-        Self { client, cache }
+    pub fn new(client: Client, cache: Cache<Link, String>) -> Self {
+        Self {
+            client,
+            cache: Mutex::new(RefCell::new(cache)),
+        }
     }
 }
 
 #[async_trait]
 impl WebClient for CachedWebClient {
     async fn get(&self, url: &str, query_params: QueryParams) -> Option<String> {
-        if let Some(cached) = self.cache.get(&(url.to_string(), query_params.clone())) {
-            return Some(cached);
+        if let Some(cached) = self
+            .cache
+            .lock()
+            .await
+            .borrow()
+            .get(&(url.to_string(), query_params.clone()))
+        {
+            return Some(cached.to_string());
         }
 
         let mut rq_builder = self.client.get(url);
@@ -37,15 +48,14 @@ impl WebClient for CachedWebClient {
 
         let responce = rq_builder.send().await.ok()?.text().await.ok()?;
 
-        self.cache.put(&(url.to_string(), query_params), &responce);
-        Some(responce.to_owned())
+        self.cache
+            .lock()
+            .await
+            .borrow_mut()
+            .put((url.to_string(), query_params), responce.clone());
+        Some(responce.to_string())
     }
 }
-
-pub struct Cache<K, V>(pub HashMap<K, V>);
-
-#[cfg_attr(test, double)]
-use Cache as WebCache;
 
 #[cfg(test)]
 mock!(pub Client {
@@ -69,28 +79,10 @@ mock!(pub Responce {
 #[cfg(test)]
 use MockClient as Client;
 
+use tokio::sync::Mutex;
 #[cfg(test)]
 use MockRequestBuilder as RequestBuilder;
 
-#[cfg_attr(test, automock)]
-impl<K, V> Cache<K, V>
-where
-    K: 'static,
-    V: 'static,
-{
-    pub fn get(&self, key: &K) -> Option<V> {
-        unimplemented!()
-    }
-
-    pub fn put(&self, key: &K, val: &V) {
-        unimplemented!()
-    }
-}
-impl<K, V> Cache<K, V> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-}
 #[cfg(test)]
 mod tests {
     use mockall::{predicate::eq, Sequence};
@@ -99,7 +91,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_cache_responce_when_request_not_found_in_cache_and_give_page_as_string() {
-        let mut mock_cache = WebCache::<Link, String>::default();
+        let mut mock_cache = Cache::<Link, String>::default();
         let mut mock_client = Client::default();
         let mut seq = Sequence::new();
 
