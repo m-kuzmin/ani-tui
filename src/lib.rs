@@ -1,5 +1,6 @@
-mod core;
-mod features;
+pub mod core;
+pub mod features;
+
 #[macro_use(async_trait)]
 extern crate async_trait;
 
@@ -8,6 +9,9 @@ extern crate lazy_static;
 
 #[macro_use(Error)]
 extern crate thiserror;
+
+#[macro_use(Parser, Subcommand, Args)]
+extern crate clap;
 
 #[cfg(test)]
 #[macro_use(automock, mock)]
