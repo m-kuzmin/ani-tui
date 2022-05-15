@@ -20,6 +20,7 @@ impl SearchAnime {
     }
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 impl Usecase for SearchAnime {
     type Params = String;
@@ -45,6 +46,7 @@ impl GetEpisodesOfAnime {
     }
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 impl Usecase for GetEpisodesOfAnime {
     type Params = AnimeSearchItem;

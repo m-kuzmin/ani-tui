@@ -2,6 +2,7 @@ use std::{collections::HashMap, hash::Hash};
 
 pub mod cli_args;
 pub mod delivery_mechanisms;
+pub mod presentation;
 
 #[async_trait]
 pub trait Usecase {
