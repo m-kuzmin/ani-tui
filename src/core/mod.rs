@@ -60,13 +60,19 @@ impl<K, V> Cache<K, V> {
     }
 }
 
+impl<K, V> Default for Cache<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn should_give_none_for_uncached_values() {
-        let mut cache = Cache::<i32, i32>::new();
+        let cache = Cache::<i32, i32>::new();
 
         assert_eq!(cache.get(&42), None);
         assert_eq!(

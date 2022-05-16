@@ -10,10 +10,12 @@ use super::{
 
 /// [`AnimeRepositoryContract`] implementor
 pub struct AnimeRepository {
+    /// A GoGoPlay data source
     gogo_play: Arc<dyn GoGoPlayInterface + Send + Sync>,
 }
 
 impl AnimeRepository {
+    /// Creates a new anime repository
     pub fn new(gogo_play: Arc<dyn GoGoPlayInterface + Send + Sync>) -> Self {
         Self { gogo_play }
     }
@@ -27,9 +29,8 @@ impl AnimeRepositoryContract for AnimeRepository {
             self.gogo_play
                 .search_anime(query)
                 .await?
-                .anime_list
                 .into_iter()
-                .map(|(title, ident)| AnimeSearchItem::new(&title, &ident))
+                .map(AnimeSearchItem::from)
                 .collect(),
         )
     }
@@ -40,7 +41,7 @@ impl AnimeRepositoryContract for AnimeRepository {
                 .get_anime_episode_list(anime.into())
                 .await?
                 .into_iter()
-                .map(|model| Episode::from(model))
+                .map(Episode::from)
                 .collect(),
         )
     }
@@ -60,7 +61,7 @@ mod tests {
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
-        data::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel},
+        data::models::{AnimeSearchItemModel, EpisodeModel},
         domain::{
             entities::{AnimeSearchItem, Episode},
             repositories::AnimeRepositoryContract,
@@ -77,11 +78,7 @@ mod tests {
             .expect_search_anime()
             .times(1)
             .with(eq("some search"))
-            .returning(|_| {
-                Some(SearchResultModel {
-                    anime_list: vec![("some anime".to_string(), "some-ident".to_string())],
-                })
-            });
+            .returning(|_| Some(vec![AnimeSearchItemModel::new("some anime", "some-ident")]));
 
         let repo = AnimeRepository::new(Arc::new(mock_datasource));
         let result = repo.search_anime("some search").await.unwrap();

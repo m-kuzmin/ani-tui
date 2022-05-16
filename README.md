@@ -2,38 +2,45 @@
 
 While `ani-cli` is pretty good, it aims to be minimalistic. This has compromized some functionality.
 
-AniTUI attemts to have all the features of `ani-cli` and add some more interactivity.
+AniTUI attemts to have all the features of `ani-cli` while adding some more interactivity.
 
 # Features
 
-**This project is being refactored so latest stable commit is [f4755d0b](https://github.com/m-kuzmin/ani-tui/tree/f4755d0bfd7e1874da82f0b6851e2e9b4e6f7b65)**
-
-You can already search and view basic info about an anime title.
+- Searching on <https://goload.pro>
 
 # Documentation
 
-Command line options are automatically documented via `clap`. Do `--help` or `-h` to read a short manual.
+- Command line options are automatically documented via `clap`. Do `--help` or `-h` to read a short manual.
 
-Code docs are not written yet due to unstable API
+- Code documentation is avaliable via `cargo doc`
 
 # When is this going to crates.io?
 
-Not yet. For a `0.1.0` I would like to have most ani-cli features to be working.
+Not yet. For a `0.1.0` I would like to have most `ani-cli` features complete, such as:
+
+- [x] Searching by title
+- [ ] Episode list
+- [ ] Description
+- [ ] Watching anime in mpv
 
 ---
 
 # Contributing
 
-1. View open issues or projects or create your own issue.
-2. Fork and code.
-3. Make a pull request explaining the changes.
+1. View open issues/projects or create your own issue
+2. Fork 
+2. Write a test → see the test fail
+3. Make the test pass
+4. Refactor
+4. Write docs
+3. Make a pull request explaining the changes
 
-## Branch guide
-
-### dev
-This is for WIP commits. However when looking through commit history you may want to look only at major points when things were finally implemented. This is why main exists
+# Branch guide
 
 ### main
-Acts like a squash for dev branch without squashing anything. Only put major commits here and use fast-forward merge.
 
-See [this answer on SO: dev branch](https://stackoverflow.com/questions/32826370/why-do-we-need-dev-branch#32826537) for details.
+A "checkpoint" of sorts. Contains the latest stable commit. Never commit to main, instead commit to `dev` and merge (PR not required).
+
+### dev
+
+Contains the work in progress commits. Unlike main this can have failing tests and missing docs.

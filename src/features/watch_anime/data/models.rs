@@ -1,22 +1,13 @@
-use std::sync::Arc;
-
 use easy_scraper::Pattern;
-use once_cell::unsync::OnceCell;
+
 use regex::Regex;
-use tokio::sync::Mutex;
 
 use crate::{
     core::Model,
-    features::watch_anime::domain::entities::{Anime, AnimeSearchItem, Episode},
+    features::watch_anime::domain::entities::{AnimeSearchItem, Episode},
 };
 
-// TODO replace with vec<anime search item model>
-#[derive(Debug, PartialEq, Eq)]
-pub struct SearchResultModel {
-    pub anime_list: Vec<(String, String)>,
-}
-
-impl Model for SearchResultModel {
+impl Model for Vec<AnimeSearchItemModel> {
     fn from_html(html: &str) -> Option<Self> {
         let pattern = Pattern::new(
             r#"
@@ -43,22 +34,22 @@ impl Model for SearchResultModel {
             .map(|m| {
                 let title = if let Some(cap) = remove_ep_number_from_title.captures(&m["title"]) {
                     if let Some(m) = cap.get(1) {
-                        m.as_str().to_string()
+                        m.as_str()
                     } else {
-                        m["title"].clone()
+                        &m["title"]
                     }
                 } else {
-                    m["title"].clone()
+                    &m["title"]
                 };
-                let link = m["ident"].clone();
-                (title, link)
+                let ident: &str = &m["ident"];
+                AnimeSearchItemModel::new(title, ident)
             })
             .collect();
-        Some(Self { anime_list })
+        Some(anime_list)
     }
 }
 
-/// An Anime search result
+/// An item in anime search results
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeSearchItemModel {
     /// Anime title
@@ -67,69 +58,27 @@ pub struct AnimeSearchItemModel {
     pub ident: String,
 }
 
+impl AnimeSearchItemModel {
+    /// Creates a new Anime Search item
+    pub fn new(title: &str, ident: &str) -> Self {
+        Self {
+            title: title.to_string(),
+            ident: ident.to_string(),
+        }
+    }
+}
 impl From<&AnimeSearchItem> for AnimeSearchItemModel {
-    fn from(source: &AnimeSearchItem) -> AnimeSearchItemModel {
-        AnimeSearchItemModel {
+    fn from(source: &AnimeSearchItem) -> Self {
+        Self {
             title: source.title.clone(),
             ident: source.ident().to_string(),
         }
     }
 }
 
-// TODO remove or use
-#[derive(Debug, PartialEq, Eq)]
-pub struct AnimeModel {
-    pub title: String,
-    pub desc: String,
-}
-
-impl From<AnimeModel> for Anime {
-    fn from(source: AnimeModel) -> Self {
-        Self {
-            title: source.title,
-            desc: source.desc,
-        }
-    }
-}
-
-impl From<&Anime> for AnimeModel {
-    fn from(source: &Anime) -> Self {
-        Self {
-            title: source.title.clone(),
-            desc: source.desc.clone(),
-        }
-    }
-}
-
-impl Model for AnimeModel {
-    fn from_html(html: &str) -> Option<Self> {
-        let pattern = Pattern::new(
-            r#"
-<div class="video-info">
-  <div class="video-info-left">
-    <div class="watch_play">
-      <div class="play-video">
-        <div class="video-details">
-          <span class="date">{{anime_title}}</span>
-          <div class="post-entry">
-            <div class="content-more-js" id="rmjs-1">{{desc}}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>"#,
-        )
-        .unwrap();
-
-        if let Some(m) = pattern.matches(html).get(0) {
-            Some(Self {
-                title: m["anime_title"].clone(),
-                desc: m["desc"].clone(),
-            })
-        } else {
-            None
-        }
+impl From<AnimeSearchItemModel> for AnimeSearchItem {
+    fn from(source: AnimeSearchItemModel) -> Self {
+        Self::new(&source.title, &source.ident)
     }
 }
 
@@ -145,6 +94,7 @@ pub struct EpisodeModel {
 }
 
 impl EpisodeModel {
+    /// Creates a new Episode model
     pub fn new(title: &str, ident: &str, ep_number: usize) -> Self {
         Self {
             title: title.to_string(),
@@ -200,7 +150,7 @@ impl From<EpisodeModel> for Episode {
 
 impl From<&Episode> for EpisodeModel {
     fn from(source: &Episode) -> Self {
-        Self::new(&source.title, &source.ident(), source.ep_number)
+        Self::new(&source.title, source.ident(), source.ep_number)
     }
 }
 
@@ -222,23 +172,18 @@ mod tests {
     #[test]
     fn should_parse_gogoplay_search_page_to_search_result_model() {
         let html = fixture("search.html");
-        let result = SearchResultModel::from_html(&html).unwrap();
+        let result = Vec::<AnimeSearchItemModel>::from_html(&html).unwrap();
 
         assert_eq!(
             result,
-            SearchResultModel {
-                anime_list: vec![
-                    (String::from("Some Anime"), String::from("some-anime")),
-                    (
-                        String::from("Some Other Anime"),
-                        String::from("some-unmatching-link")
-                    ),
-                    (
-                        String::from("This dark Episode: Doesnt end with ep number"),
-                        String::from("break-follow-ep")
-                    )
-                ]
-            }
+            vec![
+                AnimeSearchItemModel::new("Some Anime", "some-anime"),
+                AnimeSearchItemModel::new("Some Other Anime", "some-unmatching-link"),
+                AnimeSearchItemModel::new(
+                    "This dark Episode: Doesnt end with ep number",
+                    "break-follow-ep"
+                ),
+            ]
         )
     }
 
@@ -253,20 +198,6 @@ mod tests {
                 EpisodeModel::new("Episode 2 title", "some-ident", 2),
                 EpisodeModel::new("Episode 1 title", "some-ident", 1)
             ]
-        );
-    }
-
-    #[test]
-    fn should_parse_ep_html_to_anime_model() {
-        let html = fixture("some-anime-episode-1.html");
-        let result = AnimeModel::from_html(&html).unwrap();
-
-        assert_eq!(
-            result,
-            AnimeModel {
-                title: String::from("Anime title"),
-                desc: String::from("Multiline\n\ndescription")
-            }
         );
     }
 }

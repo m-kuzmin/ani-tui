@@ -1,8 +1,8 @@
 [package]
-name = "anime"
+name = "ani-tui"
 version = "0.1.0"
 edition = "2021"
-authors = ["max_ishere"]
+authors = ["m-kuzmin"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

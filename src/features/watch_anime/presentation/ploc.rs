@@ -4,15 +4,13 @@ use std::sync::Arc;
 use super::super::domain::usecases::{GetEpisodesOfAnime, SearchAnime};
 
 use crate::{
-    core::{
-        presentation::{EventlessPloc, Ploc},
-        Usecase,
-    },
+    core::{presentation::Ploc, Usecase},
     features::watch_anime::domain::entities::{AnimeSearchItem, Episode},
 };
 
 /// Autocompletes anime search
 pub struct SearchAutocompletePloc {
+    /// A search anime usecase
     searcher: Arc<SearchAnime>,
 }
 
@@ -23,7 +21,7 @@ impl Ploc<SearchEvent, SearchState> for SearchAutocompletePloc {
             SearchEvent::Autocomplete(s) => {
                 let autocomplete = self.searcher.call(&s).await;
 
-                if matches!(autocomplete, Some(ref autocomplete) if autocomplete.len() > 0) {
+                if matches!(autocomplete, Some(ref autocomplete) if !autocomplete.is_empty()) {
                     SearchState::Autocomplete(autocomplete.unwrap())
                 } else {
                     return SearchState::NoSuggestions;
@@ -54,46 +52,54 @@ pub enum SearchState {
 }
 
 impl SearchAutocompletePloc {
-    /// Creates a new [`SearchAutocompletePloc`]
+    /// Creates a new Ploc
     pub fn new(searcher: Arc<SearchAnime>) -> Self {
         Self { searcher }
     }
 }
 
-/// TODO refactor then doc
-pub struct EpisodeSelectorPloc {
-    ep_list: GetEpisodesOfAnime,
-    // TODO Remove anime state and pass it as dispatch param instead
-    anime: AnimeSearchItem,
+/// Provides a list of episodes for an anime
+pub struct EpisodeQueryPloc {
+    /// An episode query usecase
+    ep_lister: GetEpisodesOfAnime,
 }
 
-pub enum EpisodeSelectionEvent {}
+/// A request to fetch a list of episodes for an anime
+pub struct EpisodeQueryEvent(pub AnimeSearchItem);
 
+/// Information about anime's episodes
 #[derive(Debug, PartialEq, Eq)]
-pub enum EpisodeSelectionState {
-    DisplayEpList(AnimeSearchItem, Vec<Episode>),
-    NoEpisodes(AnimeSearchItem),
+pub enum EpisodeQueryState {
+    /// A list of episodes for an anime
+    DisplayEpList(Vec<Episode>),
+    /// No episodes in an anime
+    NoEpisodes,
 }
 
 #[async_trait]
-impl Ploc<EventlessPloc, EpisodeSelectionState> for EpisodeSelectorPloc {
-    async fn dispatch(&self, _: EventlessPloc) -> EpisodeSelectionState {
-        let eps = self.ep_list.call(&self.anime).await;
-        if matches!(eps, Some(ref eps) if eps.len() > 0) {
-            EpisodeSelectionState::DisplayEpList(self.anime.clone(), eps.unwrap())
+impl Ploc<EpisodeQueryEvent, EpisodeQueryState> for EpisodeQueryPloc {
+    /// Provides a list of episodes for an anime or [`NoEpisodes`][EpisodeQueryState::NoEpisodes]
+    async fn dispatch(&self, query: EpisodeQueryEvent) -> EpisodeQueryState {
+        let eps = self.ep_lister.call(&query.0).await;
+        if matches!(eps, Some(ref eps) if !eps.is_empty()) {
+            EpisodeQueryState::DisplayEpList(
+                eps.expect("matches!() should guearantee that this never panics"),
+            )
         } else {
-            EpisodeSelectionState::NoEpisodes(self.anime.clone())
+            EpisodeQueryState::NoEpisodes
         }
     }
 
-    async fn initial_state(&self) -> EpisodeSelectionState {
-        self.dispatch(()).await
+    async fn initial_state(&self) -> EpisodeQueryState {
+        //! Always sets the initial state to [`NoEpisodes`][EpisodeQueryState::NoEpisodes]
+        EpisodeQueryState::NoEpisodes
     }
 }
 
-impl EpisodeSelectorPloc {
-    pub fn new(ep_list: GetEpisodesOfAnime, anime: AnimeSearchItem) -> Self {
-        Self { ep_list, anime }
+impl EpisodeQueryPloc {
+    /// Creates a new Ploc
+    pub fn new(ep_lister: GetEpisodesOfAnime) -> Self {
+        Self { ep_lister }
     }
 }
 
@@ -178,33 +184,17 @@ mod tests {
         use mockall::predicate::eq;
 
         use super::super::*;
-        use crate::features::watch_anime::{
-            domain::entities::Episode,
-            presentation::ploc::{EpisodeSelectionState, EpisodeSelectorPloc},
+        use crate::features::watch_anime::presentation::ploc::{
+            EpisodeQueryPloc, EpisodeQueryState,
         };
 
         #[tokio::test]
-        async fn should_provide_initial_state_with_ep_list_for_anime() {
-            let mut mock_ep_selector = GetEpisodesOfAnime::default();
-            mock_ep_selector
-                .expect_call()
-                .times(1)
-                .with(eq(AnimeSearchItem::new("some anime title", "_")))
-                .returning(|_| Some(vec![Episode::new("some ep title", "_", 1)]));
-
-            let ploc = EpisodeSelectorPloc::new(
-                mock_ep_selector,
-                AnimeSearchItem::new("some anime title", "_"),
-            );
+        async fn should_provide_initial_state_as_empty() {
+            let mock_ep_selector = GetEpisodesOfAnime::default();
+            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
             let result = ploc.initial_state().await;
 
-            assert_eq!(
-                result,
-                EpisodeSelectionState::DisplayEpList(
-                    AnimeSearchItem::new("some anime title", "_"),
-                    vec![Episode::new("some ep title", "_", 1)]
-                )
-            );
+            assert_eq!(result, EpisodeQueryState::NoEpisodes);
         }
 
         #[tokio::test]
@@ -216,16 +206,11 @@ mod tests {
                 .with(eq(AnimeSearchItem::new("some anime title", "_")))
                 .returning(|_| None);
 
-            let ploc = EpisodeSelectorPloc::new(
-                mock_ep_selector,
-                AnimeSearchItem::new("some anime title", "_"),
-            );
-            let result = ploc.initial_state().await;
+            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
+            let anime = AnimeSearchItem::new("some anime title", "_");
+            let result = ploc.dispatch(EpisodeQueryEvent(anime)).await;
 
-            assert_eq!(
-                result,
-                EpisodeSelectionState::NoEpisodes(AnimeSearchItem::new("some anime title", "_"))
-            );
+            assert_eq!(result, EpisodeQueryState::NoEpisodes);
         }
 
         #[tokio::test]
@@ -237,16 +222,11 @@ mod tests {
                 .with(eq(AnimeSearchItem::new("some anime title", "_")))
                 .returning(|_| Some(vec![]));
 
-            let ploc = EpisodeSelectorPloc::new(
-                mock_ep_selector,
-                AnimeSearchItem::new("some anime title", "_"),
-            );
-            let result = ploc.initial_state().await;
+            let anime = AnimeSearchItem::new("some anime title", "_");
+            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
+            let result = ploc.dispatch(EpisodeQueryEvent(anime)).await;
 
-            assert_eq!(
-                result,
-                EpisodeSelectionState::NoEpisodes(AnimeSearchItem::new("some anime title", "_"))
-            );
+            assert_eq!(result, EpisodeQueryState::NoEpisodes);
         }
     }
 }

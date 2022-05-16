@@ -13,7 +13,6 @@ pub struct AnimeSearchItem {
 
 impl AnimeSearchItem {
     /// Creates a new AnimeSearchItem
-    // TODO #[cfg(test)]
     pub fn new(title: &str, ident: &str) -> Self {
         Self {
             title: title.to_string(),
@@ -26,22 +25,6 @@ impl AnimeSearchItem {
     /// [si]: crate::features::watch_anime::data::models::AnimeSearchItemModel
     pub fn ident(&self) -> &str {
         &self._ident
-    }
-}
-
-// TODO remove this struct or implement it
-#[derive(Debug, PartialEq, Eq)]
-pub struct Anime {
-    pub title: String,
-    pub desc: String,
-}
-
-impl Anime {
-    pub fn new(title: &str, desc: &str) -> Self {
-        Self {
-            title: title.to_string(),
-            desc: desc.to_string(),
-        }
     }
 }
 
@@ -61,8 +44,7 @@ pub struct Episode {
 }
 
 impl Episode {
-    // TODO refactor this
-    // #[cfg(test)]
+    /// Creates a new episode entity
     pub fn new(title: &str, ident: &str, ep_number: usize) -> Self {
         Self {
             title: title.to_string(),

@@ -9,10 +9,12 @@ use super::{
 
 /// Searches for anime and returns matching titles
 pub struct SearchAnime {
+    /// An anime repository
     repo: Arc<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl SearchAnime {
+    /// Creates a new usecase object
     pub fn new(repo: Arc<dyn AnimeRepositoryContract + Send + Sync>) -> Self {
         Self { repo: repo.clone() }
     }
@@ -29,16 +31,18 @@ impl Usecase for SearchAnime {
 
     /// Performs a search
     async fn call(&self, s: &Self::Params) -> Self::Return {
-        self.repo.search_anime(&s).await
+        self.repo.search_anime(s).await
     }
 }
 
 /// Provides a list of episodes for anime
 pub struct GetEpisodesOfAnime {
+    /// An anime repository
     repo: Arc<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl GetEpisodesOfAnime {
+    /// Creates a new usecase object
     pub fn new(repo: Arc<dyn AnimeRepositoryContract + Send + Sync>) -> Self {
         Self { repo }
     }
@@ -61,10 +65,12 @@ impl Usecase for GetEpisodesOfAnime {
 
 /// Provides a streaming link for anime episode
 pub struct GetStreamingLink {
+    /// An anime repository
     repo: Arc<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl GetStreamingLink {
+    /// Creates a new usecase object
     pub fn new(repo: Arc<dyn AnimeRepositoryContract + Send + Sync>) -> Self {
         Self { repo }
     }

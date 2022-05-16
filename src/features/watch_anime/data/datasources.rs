@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
-use super::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel};
+use super::models::{AnimeSearchItemModel, EpisodeModel};
 use crate::core::{delivery_mechanisms::WebClient, Model};
 
 /// Implements [`GoGoPlayInterface`]
 pub struct GoGoPlayDataSource {
+    /// A webclient
     client: Arc<dyn WebClient + Send + Sync>,
 }
 
 impl GoGoPlayDataSource {
+    /// Creates a new GoGoPlay datasource
     pub fn new(client: Arc<dyn WebClient + Send + Sync>) -> Self {
         Self { client }
     }
@@ -18,9 +20,8 @@ impl GoGoPlayDataSource {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait GoGoPlayInterface {
-    // TODO remove this searhc result model thing
     /// Searches for anime
-    async fn search_anime(&self, title: &str) -> Option<SearchResultModel>;
+    async fn search_anime(&self, title: &str) -> Option<Vec<AnimeSearchItemModel>>;
     /// Provides episode list for anime
     async fn get_anime_episode_list(
         &self,
@@ -33,7 +34,7 @@ pub trait GoGoPlayInterface {
 #[async_trait]
 impl GoGoPlayInterface for GoGoPlayDataSource {
     /// Makes a get request to <https://goload.pro/search.html?keyword={TITLE}> and returns a parsed list of anime.
-    async fn search_anime(&self, title: &str) -> Option<SearchResultModel> {
+    async fn search_anime(&self, title: &str) -> Option<Vec<AnimeSearchItemModel>> {
         let html = self
             .client
             .get(
@@ -41,7 +42,7 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
                 Some(vec![("keyword".to_string(), title.to_string())]),
             )
             .await?;
-        SearchResultModel::from_html(&html)
+        Vec::<AnimeSearchItemModel>::from_html(&html)
     }
 
     /// Makes a get request to episode 1 of an anime and returns all episodes on page (<https://goload.pro/videos/{ANIME_IDENTIFIER}-episode-1>)
@@ -59,7 +60,7 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
         Some(Vec::<EpisodeModel>::from_html(&html)?)
     }
 
-    async fn get_streaming_link(&self, ep: &EpisodeModel) -> Option<String> {
+    async fn get_streaming_link(&self, _ep: &EpisodeModel) -> Option<String> {
         unimplemented!()
     }
 }
@@ -100,19 +101,14 @@ mod tests {
 
         assert_eq!(
             result,
-            SearchResultModel {
-                anime_list: vec![
-                    (String::from("Some Anime"), String::from("some-anime")),
-                    (
-                        String::from("Some Other Anime"),
-                        String::from("some-unmatching-link")
-                    ),
-                    (
-                        String::from("This dark Episode: Doesnt end with ep number"),
-                        String::from("break-follow-ep")
-                    ),
-                ]
-            }
+            vec![
+                AnimeSearchItemModel::new("Some Anime", "some-anime"),
+                AnimeSearchItemModel::new("Some Other Anime", "some-unmatching-link"),
+                AnimeSearchItemModel::new(
+                    "This dark Episode: Doesnt end with ep number",
+                    "break-follow-ep"
+                ),
+            ]
         );
     }
 

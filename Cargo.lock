@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "anime"
+name = "ani-tui"
 version = "0.1.0"
 dependencies = [
  "async-trait",

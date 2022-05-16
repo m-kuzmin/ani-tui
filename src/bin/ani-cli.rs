@@ -1,4 +1,4 @@
-use anime::{
+use ani_tui::{
     core::{
         cli_args::{Args, Commands},
         dependency_resolution::{Dependency, Resolve},
