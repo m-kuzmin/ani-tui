@@ -21,6 +21,7 @@ dependencies = [
  "lazy_static",
  "mockall",
  "mockall_double",
+ "once_cell",
  "openssl",
  "regex",
  "reqwest",

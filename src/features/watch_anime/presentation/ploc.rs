@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 #[cfg_attr(test, double)]
 use super::super::domain::usecases::{GetEpisodesOfAnime, SearchAnime};
 
@@ -10,7 +12,7 @@ use crate::{
 };
 
 pub struct SearchAutocompletePloc {
-    searcher: SearchAnime,
+    searcher: Arc<SearchAnime>,
 }
 
 #[async_trait]
@@ -46,7 +48,7 @@ pub enum SearchState {
 }
 
 impl SearchAutocompletePloc {
-    pub fn new(searcher: SearchAnime) -> Self {
+    pub fn new(searcher: Arc<SearchAnime>) -> Self {
         Self { searcher }
     }
 }

@@ -1,17 +1,15 @@
+use std::sync::Arc;
+
 use super::models::{AnimeSearchItemModel, EpisodeModel, SearchResultModel};
 use crate::core::{delivery_mechanisms::WebClient, Model};
+
 pub struct GoGoPlayDataSource {
-    client: Box<dyn WebClient + Send + Sync>,
+    client: Arc<dyn WebClient + Send + Sync>,
 }
 
 impl GoGoPlayDataSource {
-    pub fn new<W>(client: W) -> Self
-    where
-        W: WebClient + Send + Sync + 'static,
-    {
-        Self {
-            client: Box::new(client),
-        }
+    pub fn new(client: Arc<dyn WebClient + Send + Sync>) -> Self {
+        Self { client }
     }
 }
 

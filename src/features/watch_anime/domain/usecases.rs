@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::core::Usecase;
 
 use super::{
@@ -6,17 +8,12 @@ use super::{
 };
 
 pub struct SearchAnime {
-    repo: Box<dyn AnimeRepositoryContract + Sync + Send>,
+    repo: Arc<dyn AnimeRepositoryContract + Send + Sync>,
 }
 
 impl SearchAnime {
-    pub fn new<A>(repo: A) -> Self
-    where
-        A: 'static + AnimeRepositoryContract + Sync + Send,
-    {
-        Self {
-            repo: Box::new(repo),
-        }
+    pub fn new(repo: Arc<dyn AnimeRepositoryContract + Send + Sync>) -> Self {
+        Self { repo: repo.clone() }
     }
 }
 

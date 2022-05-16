@@ -1,17 +1,24 @@
 use anime::{
-    core::{cli_args::*, delivery_mechanisms::CachedWebClient, Cache, Usecase},
-    features::watch_anime::{
-        data::{datasources::GoGoPlayDataSource, repositories::AnimeRepository},
-        domain::usecases::SearchAnime,
+    core::{
+        cli_args::{Args, Commands},
+        dependency_resolution::{Dependency, Resolve},
+        Usecase,
     },
+    features::watch_anime::domain::usecases::SearchAnime,
 };
+use clap::Parser;
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
     match args.command {
         Commands::Search { title } => {
-            // TODO get search usecase from DI container
+            let usecase = SearchAnime::new(Dependency::resolve());
+            let results = usecase.call(&title).await.unwrap();
+
+            for result in results {
+                println!("{}", result.title);
+            }
         }
     }
 }

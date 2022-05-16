@@ -5,8 +5,8 @@ use super::Cache;
 #[cfg(not(test))]
 use reqwest::Client;
 
-type Link = (String, QueryParams);
-type QueryParams = Option<Vec<(String, String)>>;
+pub type Link = (String, QueryParams);
+pub type QueryParams = Option<Vec<(String, String)>>;
 
 #[cfg_attr(test, automock)]
 #[async_trait]

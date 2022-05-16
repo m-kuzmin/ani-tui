@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::features::watch_anime::domain::entities::AnimeSearchItem;
 
 use super::{
@@ -7,17 +9,12 @@ use super::{
 };
 
 pub struct AnimeRepository {
-    gogo_play: Box<dyn GoGoPlayInterface + Send + Sync>,
+    gogo_play: Arc<dyn GoGoPlayInterface + Send + Sync>,
 }
 
 impl AnimeRepository {
-    pub fn new<G>(gogo_play: G) -> Self
-    where
-        G: GoGoPlayInterface + Sync + Send + 'static,
-    {
-        Self {
-            gogo_play: Box::new(gogo_play),
-        }
+    pub fn new(gogo_play: Arc<dyn GoGoPlayInterface + Send + Sync>) -> Self {
+        Self { gogo_play }
     }
 }
 

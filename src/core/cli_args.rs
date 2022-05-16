@@ -10,6 +10,7 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Search for an anime by title
     Search { title: String },
 }
 
