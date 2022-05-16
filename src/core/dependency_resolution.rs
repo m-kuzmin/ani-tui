@@ -5,7 +5,7 @@ pub trait Resolve<T> {
     //! pub struct A;
     //! let resolved: A = Dependency::resolve();
     //!
-    //! # use anime::core::dependency_resolution::{Dependency, Resolve};
+    //! # use ani_tui::core::dependency_resolution::{Dependency, Resolve};
     //! #
     //! impl Resolve<A> for Dependency {
     //!     fn resolve() -> A { A }

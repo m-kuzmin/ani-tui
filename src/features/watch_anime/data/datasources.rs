@@ -57,6 +57,10 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
                 None,
             )
             .await?;
+        if &html == "404\n" {
+            return None;
+        }
+
         Some(Vec::<EpisodeModel>::from_html(&html)?)
     }
 
@@ -128,10 +132,7 @@ mod tests {
         let datasource = GoGoPlayDataSource::new(Arc::new(mock_client));
 
         let result = datasource
-            .get_anime_episode_list(AnimeSearchItemModel {
-                title: String::from("some title"),
-                ident: String::from("some-ident"),
-            })
+            .get_anime_episode_list(AnimeSearchItemModel::new("", "some-ident"))
             .await
             .unwrap();
 
@@ -142,5 +143,27 @@ mod tests {
                 EpisodeModel::new("Episode 1 title", "some-ident", 1)
             ]
         );
+    }
+
+    #[tokio::test]
+    async fn should_detect_404_when_getting_ep_list() {
+        let mut mock_client = WebClient::new();
+
+        mock_client
+            .expect_get()
+            .times(1)
+            .with(
+                eq("https://goload.pro/videos/some-ident-episode-1"),
+                eq(None),
+            )
+            .returning(|_, _| Some(String::from("404\n")));
+
+        let datasource = GoGoPlayDataSource::new(Arc::new(mock_client));
+
+        let result = datasource
+            .get_anime_episode_list(AnimeSearchItemModel::new("", "some-ident"))
+            .await;
+
+        assert_eq!(result, None);
     }
 }

@@ -19,13 +19,18 @@ pub enum Commands {
         /// Anime title
         title: String,
     },
+    /// Get a list of episodes for anime identifier.
+    ListEps {
+        /// An anime identifier
+        ident: String,
+    },
 }
 
 /// An anime title + episode number
 #[derive(Args)]
 pub struct Anime {
     /// Anme title
-    pub title: String,
+    pub anime: String,
     /// Aniem episode
     pub ep: usize,
 }

@@ -61,7 +61,7 @@ impl SearchAutocompletePloc {
 /// Provides a list of episodes for an anime
 pub struct EpisodeQueryPloc {
     /// An episode query usecase
-    ep_lister: GetEpisodesOfAnime,
+    ep_lister: Arc<GetEpisodesOfAnime>,
 }
 
 /// A request to fetch a list of episodes for an anime
@@ -98,7 +98,7 @@ impl Ploc<EpisodeQueryEvent, EpisodeQueryState> for EpisodeQueryPloc {
 
 impl EpisodeQueryPloc {
     /// Creates a new Ploc
-    pub fn new(ep_lister: GetEpisodesOfAnime) -> Self {
+    pub fn new(ep_lister: Arc<GetEpisodesOfAnime>) -> Self {
         Self { ep_lister }
     }
 }
@@ -191,7 +191,7 @@ mod tests {
         #[tokio::test]
         async fn should_provide_initial_state_as_empty() {
             let mock_ep_selector = GetEpisodesOfAnime::default();
-            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
+            let ploc = EpisodeQueryPloc::new(Arc::new(mock_ep_selector));
             let result = ploc.initial_state().await;
 
             assert_eq!(result, EpisodeQueryState::NoEpisodes);
@@ -206,7 +206,7 @@ mod tests {
                 .with(eq(AnimeSearchItem::new("some anime title", "_")))
                 .returning(|_| None);
 
-            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
+            let ploc = EpisodeQueryPloc::new(Arc::new(mock_ep_selector));
             let anime = AnimeSearchItem::new("some anime title", "_");
             let result = ploc.dispatch(EpisodeQueryEvent(anime)).await;
 
@@ -223,7 +223,7 @@ mod tests {
                 .returning(|_| Some(vec![]));
 
             let anime = AnimeSearchItem::new("some anime title", "_");
-            let ploc = EpisodeQueryPloc::new(mock_ep_selector);
+            let ploc = EpisodeQueryPloc::new(Arc::new(mock_ep_selector));
             let result = ploc.dispatch(EpisodeQueryEvent(anime)).await;
 
             assert_eq!(result, EpisodeQueryState::NoEpisodes);

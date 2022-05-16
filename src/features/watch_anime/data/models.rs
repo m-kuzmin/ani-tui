@@ -7,6 +7,15 @@ use crate::{
     features::watch_anime::domain::entities::{AnimeSearchItem, Episode},
 };
 
+/// An item in anime search results
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnimeSearchItemModel {
+    /// Anime title
+    pub title: String,
+    /// Part of a URL that identifies this anime
+    pub ident: String,
+}
+
 impl Model for Vec<AnimeSearchItemModel> {
     fn from_html(html: &str) -> Option<Self> {
         let pattern = Pattern::new(
@@ -47,15 +56,6 @@ impl Model for Vec<AnimeSearchItemModel> {
             .collect();
         Some(anime_list)
     }
-}
-
-/// An item in anime search results
-#[derive(Debug, PartialEq, Eq)]
-pub struct AnimeSearchItemModel {
-    /// Anime title
-    pub title: String,
-    /// Part of a URL that identifies this anime
-    pub ident: String,
 }
 
 impl AnimeSearchItemModel {

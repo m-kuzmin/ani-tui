@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use crate::features::watch_anime::domain::entities::AnimeSearchItem;
 
@@ -25,14 +25,11 @@ impl AnimeRepository {
 impl AnimeRepositoryContract for AnimeRepository {
     /// Searches for anime in GoGoPlay datasource
     async fn search_anime(&self, query: &str) -> Option<Vec<AnimeSearchItem>> {
-        Some(
-            self.gogo_play
-                .search_anime(query)
-                .await?
-                .into_iter()
-                .map(AnimeSearchItem::from)
-                .collect(),
-        )
+        let mut res = self.gogo_play.search_anime(query).await?;
+        let mut set = HashSet::new();
+        res.retain(|x| set.insert(x.ident.clone()));
+
+        Some(res.into_iter().map(AnimeSearchItem::from).collect())
     }
     /// Provides a list of episodes for anime from GoGoPlay datasource
     async fn get_anime_episodes(&self, anime: &AnimeSearchItem) -> Option<Vec<Episode>> {
@@ -87,6 +84,28 @@ mod tests {
             result,
             vec![AnimeSearchItem::new("some anime", "some-ident")]
         );
+    }
+
+    #[tokio::test]
+    async fn should_dedup_search_results() {
+        let mut mock_datasource = GoGoPlayDataSource::new();
+
+        mock_datasource
+            .expect_search_anime()
+            .times(1)
+            .with(eq("some search"))
+            .returning(|_| {
+                let duplicate = AnimeSearchItemModel::new("some anime title", "some-ident");
+                Some(vec![duplicate.clone(), duplicate.clone()])
+            });
+
+        let repo = AnimeRepository::new(Arc::new(mock_datasource));
+        let result = repo.search_anime("some search").await.unwrap();
+
+        assert_eq!(
+            result,
+            vec![AnimeSearchItem::new("some anime title", "some-ident")]
+        )
     }
 
     #[tokio::test]
