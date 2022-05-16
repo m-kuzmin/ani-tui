@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::core::Usecase;
 
 use super::{
-    entities::{AnimeSearchItem, Episode},
+    entities::{AnimeDetails, AnimeSearchItem, Episode},
     repositories::AnimeRepositoryContract,
 };
 
@@ -63,6 +63,29 @@ impl Usecase for GetEpisodesOfAnime {
     }
 }
 
+/// Provides details for an anime
+pub struct GetAnimeDetails {
+    /// An anime repository
+    repo: Arc<dyn AnimeRepositoryContract + Send + Sync>,
+}
+
+#[async_trait]
+impl Usecase for GetAnimeDetails {
+    type Params = AnimeSearchItem;
+    type Return = Option<AnimeDetails>;
+
+    async fn call(&self, anime: &Self::Params) -> Self::Return {
+        self.repo.get_anime_details(anime).await
+    }
+}
+
+impl GetAnimeDetails {
+    /// Creates a new instance
+    pub fn new(repo: Arc<dyn AnimeRepositoryContract + Send + Sync>) -> Self {
+        Self { repo }
+    }
+}
+
 /// Provides a streaming link for anime episode
 pub struct GetStreamingLink {
     /// An anime repository
@@ -92,6 +115,8 @@ impl Usecase for GetStreamingLink {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::watch_anime::domain::entities::AnimeDetails;
+
     use super::{super::repositories::MockAnimeRepositoryContract as AnimeRepository, *};
     use mockall::predicate::*;
 
@@ -158,5 +183,35 @@ mod tests {
             .unwrap();
 
         assert_eq!(&"some link", &result);
+    }
+
+    #[tokio::test]
+    async fn should_get_anime_details() {
+        let mut mock_repo = AnimeRepository::new();
+
+        const number_of_eps: usize = 1;
+        mock_repo
+            .expect_get_anime_details()
+            .times(1)
+            .with(eq(AnimeSearchItem::new("", "some-ident")))
+            .returning(|_| {
+                Some(AnimeDetails::new(
+                    "some title",
+                    "some description",
+                    "some-ident",
+                ))
+            });
+
+        let usecase = GetAnimeDetails::new(Arc::new(mock_repo));
+
+        let result = usecase
+            .call(&AnimeSearchItem::new("", "some-ident"))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result,
+            AnimeDetails::new("some title", "some description", "some-ident")
+        );
     }
 }

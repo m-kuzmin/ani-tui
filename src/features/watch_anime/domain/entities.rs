@@ -28,6 +28,30 @@ impl AnimeSearchItem {
     }
 }
 
+/// Details from anime page
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnimeDetails {
+    /// Anime Title
+    pub title: String,
+    /// Description
+    pub desc: String,
+
+    /// From anime model
+    #[doc(hidden)]
+    _ident: String,
+}
+
+impl AnimeDetails {
+    /// Creates a new instance
+    pub fn new(title: &str, desc: &str, ident: &str) -> Self {
+        Self {
+            title: title.to_string(),
+            desc: desc.to_string(),
+            _ident: ident.to_string(),
+        }
+    }
+}
+
 /// Stores information about an episode
 #[derive(PartialEq, Eq, Debug)]
 pub struct Episode {

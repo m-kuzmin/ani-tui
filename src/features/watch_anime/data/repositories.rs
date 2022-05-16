@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use crate::features::watch_anime::domain::entities::AnimeSearchItem;
+use crate::features::watch_anime::domain::entities::{AnimeDetails, AnimeSearchItem};
 
 use super::{
     super::domain::{entities::Episode, repositories::AnimeRepositoryContract},
@@ -48,6 +48,10 @@ impl AnimeRepositoryContract for AnimeRepository {
         self.gogo_play
             .get_streaming_link(&EpisodeModel::from(ep))
             .await
+    }
+
+    async fn get_anime_details(&self, anime: &AnimeSearchItem) -> Option<AnimeDetails> {
+        todo!()
     }
 }
 
