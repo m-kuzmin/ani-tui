@@ -19,7 +19,7 @@ AniTUI attemts to have all the features of `ani-cli` while adding some more inte
 Not yet. For a `0.1.0` I would like to have most `ani-cli` features complete, such as:
 
 - [x] Searching by title
-- [ ] Episode list
+- [x] Episode list
 - [ ] Description
 - [ ] Watching anime in mpv
 
