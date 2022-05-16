@@ -11,6 +11,7 @@ use crate::{
     features::watch_anime::domain::entities::{AnimeSearchItem, Episode},
 };
 
+/// Autocompletes anime search
 pub struct SearchAutocompletePloc {
     searcher: Arc<SearchAnime>,
 }
@@ -25,36 +26,44 @@ impl Ploc<SearchEvent, SearchState> for SearchAutocompletePloc {
                 if matches!(autocomplete, Some(ref autocomplete) if autocomplete.len() > 0) {
                     SearchState::Autocomplete(autocomplete.unwrap())
                 } else {
-                    return SearchState::Empty;
+                    return SearchState::NoSuggestions;
                 }
             }
         }
     }
 
     async fn initial_state(&self) -> SearchState {
-        SearchState::Empty
+        SearchState::NoSuggestions
     }
 }
 
+/// [Autocomplete][SearchAutocompletePloc] events
 #[derive(Debug, PartialEq, Eq)]
 pub enum SearchEvent {
+    /// A string to provide autocomplete for
     Autocomplete(String),
 }
 
+///[Autocomplete][SearchAutocompletePloc] state
 #[derive(Debug, PartialEq, Eq)]
 pub enum SearchState {
+    /// Autocomplete options
     Autocomplete(Vec<AnimeSearchItem>),
-    Empty,
+    /// No suggestions
+    NoSuggestions,
 }
 
 impl SearchAutocompletePloc {
+    /// Creates a new [`SearchAutocompletePloc`]
     pub fn new(searcher: Arc<SearchAnime>) -> Self {
         Self { searcher }
     }
 }
 
+/// TODO refactor then doc
 pub struct EpisodeSelectorPloc {
     ep_list: GetEpisodesOfAnime,
+    // TODO Remove anime state and pass it as dispatch param instead
     anime: AnimeSearchItem,
 }
 
@@ -69,16 +78,16 @@ pub enum EpisodeSelectionState {
 #[async_trait]
 impl Ploc<EventlessPloc, EpisodeSelectionState> for EpisodeSelectorPloc {
     async fn dispatch(&self, _: EventlessPloc) -> EpisodeSelectionState {
-        self.initial_state().await
-    }
-
-    async fn initial_state(&self) -> EpisodeSelectionState {
         let eps = self.ep_list.call(&self.anime).await;
         if matches!(eps, Some(ref eps) if eps.len() > 0) {
             EpisodeSelectionState::DisplayEpList(self.anime.clone(), eps.unwrap())
         } else {
             EpisodeSelectionState::NoEpisodes(self.anime.clone())
         }
+    }
+
+    async fn initial_state(&self) -> EpisodeSelectionState {
+        self.dispatch(()).await
     }
 }
 
@@ -97,11 +106,11 @@ mod tests {
 
         #[tokio::test]
         async fn should_provide_initial_state() {
-            let mock_searcher = SearchAnime::default();
+            let mock_searcher = Arc::new(SearchAnime::default());
             let ploc = SearchAutocompletePloc::new(mock_searcher);
             let result = ploc.initial_state().await;
 
-            assert_eq!(result, SearchState::Empty);
+            assert_eq!(result, SearchState::NoSuggestions);
         }
 
         #[tokio::test]
@@ -114,7 +123,7 @@ mod tests {
                 .with(eq(String::from("some search")))
                 .returning(|_| Some(vec![AnimeSearchItem::new("some match", "_")]));
 
-            let ploc = SearchAutocompletePloc::new(mock_searcher);
+            let ploc = SearchAutocompletePloc::new(Arc::new(mock_searcher));
 
             let result = ploc
                 .dispatch(SearchEvent::Autocomplete(String::from("some search")))
@@ -136,13 +145,13 @@ mod tests {
                 .with(eq(String::from("some search")))
                 .returning(|_| Some(vec![]));
 
-            let ploc = SearchAutocompletePloc::new(mock_searcher);
+            let ploc = SearchAutocompletePloc::new(Arc::new(mock_searcher));
 
             let result = ploc
                 .dispatch(SearchEvent::Autocomplete(String::from("some search")))
                 .await;
 
-            assert_eq!(result, SearchState::Empty);
+            assert_eq!(result, SearchState::NoSuggestions);
         }
 
         #[tokio::test]
@@ -155,13 +164,13 @@ mod tests {
                 .with(eq(String::from("some search")))
                 .returning(|_| None);
 
-            let ploc = SearchAutocompletePloc::new(mock_searcher);
+            let ploc = SearchAutocompletePloc::new(Arc::new(mock_searcher));
 
             let result = ploc
                 .dispatch(SearchEvent::Autocomplete(String::from("some search")))
                 .await;
 
-            assert_eq!(result, SearchState::Empty);
+            assert_eq!(result, SearchState::NoSuggestions);
         }
     }
 

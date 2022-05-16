@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use easy_scraper::Pattern;
+use once_cell::unsync::OnceCell;
 use regex::Regex;
+use tokio::sync::Mutex;
 
 use crate::{
     core::Model,
     features::watch_anime::domain::entities::{Anime, AnimeSearchItem, Episode},
 };
 
+// TODO replace with vec<anime search item model>
 #[derive(Debug, PartialEq, Eq)]
 pub struct SearchResultModel {
     pub anime_list: Vec<(String, String)>,
@@ -53,9 +58,12 @@ impl Model for SearchResultModel {
     }
 }
 
+/// An Anime search result
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeSearchItemModel {
+    /// Anime title
     pub title: String,
+    /// Part of a URL that identifies this anime
     pub ident: String,
 }
 
@@ -68,6 +76,7 @@ impl From<&AnimeSearchItem> for AnimeSearchItemModel {
     }
 }
 
+// TODO remove or use
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnimeModel {
     pub title: String,
@@ -124,10 +133,14 @@ impl Model for AnimeModel {
     }
 }
 
+/// An anime episode model
 #[derive(Debug, PartialEq, Eq)]
 pub struct EpisodeModel {
+    /// Episode title
     pub title: String,
+    /// Anime identiifer. See [`AnimeSearchItemModel::ident`]
     pub ident: String,
+    /// Episode number
     pub ep_number: usize,
 }
 
@@ -142,6 +155,7 @@ impl EpisodeModel {
 }
 
 impl Model for Vec<EpisodeModel> {
+    /// Creates a list of all episodes located on anime page
     fn from_html(html: &str) -> Option<Self> {
         let pattern = Pattern::new(
             r#"

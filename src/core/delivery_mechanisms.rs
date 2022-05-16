@@ -5,21 +5,29 @@ use super::Cache;
 #[cfg(not(test))]
 use reqwest::Client;
 
+/// [`String`] part encodes the URL. See [`QueryParams`].
 pub type Link = (String, QueryParams);
+/// Optional query parameters
 pub type QueryParams = Option<Vec<(String, String)>>;
 
+/// Web request interface
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait WebClient {
+    /// Makes a get request. An address is encoded as a [`Link`]
     async fn get(&self, url: &str, query_param: QueryParams) -> Option<String>;
 }
 
-pub struct CachedWebClient {
+/// Implements a [`WebClient`] with local web page caching.
+pub struct CachingWebClient {
+    /// [`reqwest::Client`]
     client: Client,
+    /// A thread safe cache mapping a [`Link`] to webpage content as [`String`].
     cache: Mutex<RefCell<Cache<Link, String>>>,
 }
 
-impl CachedWebClient {
+impl CachingWebClient {
+    /// Creates a new [`CachingWebClient`]
     pub fn new(client: Client, cache: Cache<Link, String>) -> Self {
         Self {
             client,
@@ -29,7 +37,8 @@ impl CachedWebClient {
 }
 
 #[async_trait]
-impl WebClient for CachedWebClient {
+impl WebClient for CachingWebClient {
+    /// Gets a webpage and stores it in the local cache
     async fn get(&self, url: &str, query_params: QueryParams) -> Option<String> {
         if let Some(cached) = self
             .cache
@@ -132,7 +141,7 @@ mod tests {
             )
             .returning(|_, _| {});
 
-        let web_client = CachedWebClient::new(mock_client, mock_cache);
+        let web_client = CachingWebClient::new(mock_client, mock_cache);
 
         let result = web_client.get("https://test.com", None).await.unwrap();
         assert_eq!(result, "<h1>[PASS] Test!</h1>");

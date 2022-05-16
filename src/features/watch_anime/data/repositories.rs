@@ -8,6 +8,7 @@ use super::{
     models::EpisodeModel,
 };
 
+/// [`AnimeRepositoryContract`] implementor
 pub struct AnimeRepository {
     gogo_play: Arc<dyn GoGoPlayInterface + Send + Sync>,
 }
@@ -20,6 +21,7 @@ impl AnimeRepository {
 
 #[async_trait]
 impl AnimeRepositoryContract for AnimeRepository {
+    /// Searches for anime in GoGoPlay datasource
     async fn search_anime(&self, query: &str) -> Option<Vec<AnimeSearchItem>> {
         Some(
             self.gogo_play
@@ -31,7 +33,7 @@ impl AnimeRepositoryContract for AnimeRepository {
                 .collect(),
         )
     }
-
+    /// Provides a list of episodes for anime from GoGoPlay datasource
     async fn get_anime_episodes(&self, anime: &AnimeSearchItem) -> Option<Vec<Episode>> {
         Some(
             self.gogo_play
@@ -43,6 +45,7 @@ impl AnimeRepositoryContract for AnimeRepository {
         )
     }
 
+    /// Provides a streaming link for an episode from GoGoPlay datasource
     async fn get_streaming_link(&self, ep: &Episode) -> Option<String> {
         self.gogo_play
             .get_streaming_link(&EpisodeModel::from(ep))
@@ -52,6 +55,8 @@ impl AnimeRepositoryContract for AnimeRepository {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
@@ -62,11 +67,12 @@ mod tests {
         },
     };
 
-    use super::{super::datasources::MockGoGoPlayInterface, AnimeRepository};
+    use super::{super::datasources::MockGoGoPlayInterface as GoGoPlayDataSource, AnimeRepository};
 
     #[tokio::test]
     async fn should_give_anime_search_resultrs_from_gogoplay() {
-        let mut mock_datasource = MockGoGoPlayInterface::new();
+        let mut mock_datasource = GoGoPlayDataSource::new();
+
         mock_datasource
             .expect_search_anime()
             .times(1)
@@ -77,7 +83,7 @@ mod tests {
                 })
             });
 
-        let repo = AnimeRepository::new(mock_datasource);
+        let repo = AnimeRepository::new(Arc::new(mock_datasource));
         let result = repo.search_anime("some search").await.unwrap();
 
         assert_eq!(
@@ -88,7 +94,8 @@ mod tests {
 
     #[tokio::test]
     async fn should_give_anime_episode_list_from_gogoplay() {
-        let mut mock_datasource = MockGoGoPlayInterface::new();
+        let mut mock_datasource = GoGoPlayDataSource::new();
+
         mock_datasource
             .expect_get_anime_episode_list()
             .times(1)
@@ -103,7 +110,7 @@ mod tests {
                 ])
             });
 
-        let repo = AnimeRepository::new(mock_datasource);
+        let repo = AnimeRepository::new(Arc::new(mock_datasource));
         let result = repo
             .get_anime_episodes(&AnimeSearchItem::new("some title", "some-ident"))
             .await
@@ -120,7 +127,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_give_streaming_link_from_gogoplay() {
-        let mut mock_datasource = MockGoGoPlayInterface::new();
+        let mut mock_datasource = GoGoPlayDataSource::new();
 
         mock_datasource
             .expect_get_streaming_link()
@@ -128,7 +135,7 @@ mod tests {
             .with(eq(EpisodeModel::new("some title", "some-ident", 1)))
             .returning(|_| Some(String::from("some/link")));
 
-        let repo = AnimeRepository::new(mock_datasource);
+        let repo = AnimeRepository::new(Arc::new(mock_datasource));
         let result = repo
             .get_streaming_link(&Episode::new("some title", "some-ident", 1))
             .await

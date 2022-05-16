@@ -1,14 +1,19 @@
+/// Data providers
 pub mod data;
+/// Domain of the application
 pub mod domain;
+/// User interactivity layer
 pub mod presentation;
 
+/// Dependency resolution
+#[doc(hidden)]
 #[cfg(not(test))]
 pub mod di {
     use once_cell::sync::OnceCell;
     use std::sync::Arc;
 
     use crate::core::{
-        delivery_mechanisms::{CachedWebClient, Link, WebClient},
+        delivery_mechanisms::{CachingWebClient, Link, WebClient},
         dependency_resolution::{Dependency, Resolve},
         Cache,
     };
@@ -63,7 +68,7 @@ pub mod di {
             static INSTANCE: OnceCell<Arc<dyn WebClient + Send + Sync>> = OnceCell::new();
             INSTANCE
                 .get_or_init(|| {
-                    Arc::new(CachedWebClient::new(
+                    Arc::new(CachingWebClient::new(
                         reqwest::Client::builder().user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0").build().unwrap(),
                         Cache::<Link, String>::new(),
                     ))

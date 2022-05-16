@@ -1,16 +1,13 @@
+/// Provides utility functionality used throughout the crate
 pub mod core;
+
+/// Implementation of app's features
 pub mod features;
 
 #[macro_use(async_trait)]
 extern crate async_trait;
 
-#[macro_use(lazy_static)]
-extern crate lazy_static;
-
-#[macro_use(Error)]
-extern crate thiserror;
-
-#[macro_use(Parser, Subcommand, Args)]
+#[macro_use(Subcommand, Args)]
 extern crate clap;
 
 #[cfg(test)]
