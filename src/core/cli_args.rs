@@ -24,6 +24,11 @@ pub enum Commands {
         /// An anime identifier
         ident: String,
     },
+    /// Get detailed information: description + episode list
+    Detail {
+        /// An anime identifier
+        ident: String,
+    },
 }
 
 /// An anime title + episode number

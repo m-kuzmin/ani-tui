@@ -1,5 +1,3 @@
-use crate::features::watch_anime::data::models::AnimeSearchItemModel;
-
 use super::entities::{AnimeDetails, AnimeSearchItem, Episode};
 
 /// Anime repository interface

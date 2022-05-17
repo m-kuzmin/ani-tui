@@ -1,6 +1,5 @@
 use easy_scraper::Pattern;
 
-use lazy_static::__Deref;
 use regex::Regex;
 
 use crate::{
@@ -116,14 +115,10 @@ impl Model for AnimeDetailsModel {
             r#"
 <div class="video-info">
   <div class="video-info-left">
-    <div class="watch_play">
-      <div class="play-video">
-        <div class="video-details">
-          <span class="date">{{anime_title}}</span>
-          <div class="post-entry">
-            <div class="content-more-js" id="rmjs-1">{{desc}}</div>
-          </div>
-        </div>
+    <div class="video-details">
+      <span class="date">{{anime_title}}</span>
+      <div class="post-entry">
+        <div class="content-more-js" id="rmjs-1">{{desc}}</div>
       </div>
     </div>
   </div>

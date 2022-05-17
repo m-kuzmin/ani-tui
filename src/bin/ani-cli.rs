@@ -8,7 +8,7 @@ use ani_tui::{
     },
     features::watch_anime::domain::{
         entities::AnimeSearchItem,
-        usecases::{GetEpisodesOfAnime, SearchAnime},
+        usecases::{GetAnimeDetails, GetEpisodesOfAnime, SearchAnime},
     },
 };
 use clap::Parser;
@@ -34,7 +34,7 @@ async fn main() {
             let usecase = GetEpisodesOfAnime::new(Dependency::resolve());
             let results = usecase.call(&AnimeSearchItem::new("", &ident)).await;
 
-            if let None = results {
+            if results.is_none() {
                 println!("Error: Nothing found.");
                 exit(1);
             }
@@ -47,6 +47,34 @@ async fn main() {
                     " {number:>3} {title}",
                     number = result.ep_number,
                     title = result.title,
+                );
+            }
+            println!()
+        }
+
+        Commands::Detail { ident } => {
+            let usecase = GetAnimeDetails::new(Dependency::resolve());
+            let result = usecase.call(&AnimeSearchItem::new("", &ident)).await;
+
+            if result.is_none() {
+                println!("Error: Nothing found.");
+                exit(1);
+            }
+            let result = result.unwrap();
+
+            println!(
+                "\n {title}\n [{ident}]\n\n{desc}",
+                ident = result.ident(),
+                title = result.title,
+                desc = result.desc,
+            );
+
+            println!();
+            for ep in result.eps {
+                println!(
+                    " {number:>3} {title}",
+                    number = ep.ep_number,
+                    title = ep.title,
                 );
             }
             println!()

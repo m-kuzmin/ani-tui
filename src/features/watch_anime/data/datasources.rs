@@ -85,7 +85,6 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
         if &html == "404\n" {
             return None;
         }
-
         AnimeDetailsModel::from_html(&html)
     }
 }
