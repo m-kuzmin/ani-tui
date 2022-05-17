@@ -53,6 +53,11 @@ impl AnimeDetails {
             eps,
         }
     }
+
+    /// Gets the internal identfier
+    pub fn ident(&self) -> &str {
+        &self._ident
+    }
 }
 
 /// Stores information about an episode

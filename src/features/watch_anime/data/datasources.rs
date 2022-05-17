@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::models::{AnimeSearchItemModel, EpisodeModel};
+use super::models::{AnimeDetailsModel, AnimeSearchItemModel, EpisodeModel};
 use crate::core::{delivery_mechanisms::WebClient, Model};
 
 /// Implements [`GoGoPlayInterface`]
@@ -22,13 +22,18 @@ impl GoGoPlayDataSource {
 pub trait GoGoPlayInterface {
     /// Searches for anime
     async fn search_anime(&self, title: &str) -> Option<Vec<AnimeSearchItemModel>>;
+
     /// Provides episode list for anime
     async fn get_anime_episode_list(
         &self,
         anime: AnimeSearchItemModel,
     ) -> Option<Vec<EpisodeModel>>;
+
     /// Provides a streaming link for anime episode
     async fn get_streaming_link(&self, ep: &EpisodeModel) -> Option<String>;
+
+    /// Provides detailed information about an anime
+    async fn get_anime_details(&self, anime: &AnimeSearchItemModel) -> Option<AnimeDetailsModel>;
 }
 
 #[async_trait]
@@ -61,11 +66,27 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
             return None;
         }
 
-        Some(Vec::<EpisodeModel>::from_html(&html)?)
+        Vec::<EpisodeModel>::from_html(&html)
     }
 
     async fn get_streaming_link(&self, _ep: &EpisodeModel) -> Option<String> {
-        unimplemented!()
+        unimplemented!("Get streaming link")
+    }
+
+    async fn get_anime_details(&self, anime: &AnimeSearchItemModel) -> Option<AnimeDetailsModel> {
+        let html = self
+            .client
+            .get(
+                &format!("https://goload.pro/videos/{}-episode-1", anime.ident),
+                None,
+            )
+            .await?;
+
+        if &html == "404\n" {
+            return None;
+        }
+
+        AnimeDetailsModel::from_html(&html)
     }
 }
 
@@ -165,5 +186,39 @@ mod tests {
             .await;
 
         assert_eq!(result, None);
+    }
+
+    #[tokio::test]
+    async fn should_get_anime_details() {
+        let mut mock_client = WebClient::new();
+
+        mock_client
+            .expect_get()
+            .times(1)
+            .with(
+                eq("https://goload.pro/videos/some-ident-episode-1"),
+                eq(None),
+            )
+            .returning(|_, _| Some(fixture("some-anime-episode-1.html")));
+
+        let datasource = GoGoPlayDataSource::new(Arc::new(mock_client));
+
+        let result = datasource
+            .get_anime_details(&AnimeSearchItemModel::new("some title", "some-ident"))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result,
+            AnimeDetailsModel::new(
+                "Anime title",
+                "Multiline\n\ndescription",
+                vec![
+                    EpisodeModel::new("Episode 2 title", "some-ident", 2),
+                    EpisodeModel::new("Episode 1 title", "some-ident", 1),
+                ],
+                "some-ident",
+            )
+        );
     }
 }

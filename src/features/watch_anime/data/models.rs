@@ -1,10 +1,11 @@
 use easy_scraper::Pattern;
 
+use lazy_static::__Deref;
 use regex::Regex;
 
 use crate::{
     core::Model,
-    features::watch_anime::domain::entities::{AnimeSearchItem, Episode},
+    features::watch_anime::domain::entities::{AnimeDetails, AnimeSearchItem, Episode},
 };
 
 /// An item in anime search results
@@ -82,8 +83,96 @@ impl From<AnimeSearchItemModel> for AnimeSearchItem {
     }
 }
 
+/// Models data on anime page
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnimeDetailsModel {
+    /// Anime title
+    pub title: String,
+    /// Anime description
+    pub desc: String,
+    /// Anime identifier
+    pub ident: String,
+    /// List of anime episodes
+    pub eps: Vec<EpisodeModel>,
+}
+
+impl AnimeDetailsModel {
+    /// Creates a new anime details model
+    pub fn new(title: &str, desc: &str, eps: Vec<EpisodeModel>, ident: &str) -> Self {
+        Self {
+            title: title.to_string(),
+            desc: desc.to_string(),
+            eps,
+            ident: ident.to_string(),
+        }
+    }
+}
+
+impl Model for AnimeDetailsModel {
+    fn from_html(html: &str) -> Option<Self> {
+        let eps = Vec::<EpisodeModel>::from_html(html)?;
+
+        let pattern = Pattern::new(
+            r#"
+<div class="video-info">
+  <div class="video-info-left">
+    <div class="watch_play">
+      <div class="play-video">
+        <div class="video-details">
+          <span class="date">{{anime_title}}</span>
+          <div class="post-entry">
+            <div class="content-more-js" id="rmjs-1">{{desc}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>"#,
+        )
+        .unwrap();
+
+        let matches = pattern.matches(html);
+        let capture = matches.get(0)?;
+
+        let ident = eps.get(0)?.ident.clone();
+        Some(AnimeDetailsModel::new(
+            &capture["anime_title"],
+            &capture["desc"],
+            eps,
+            &ident,
+        ))
+    }
+}
+
+impl From<&AnimeDetails> for AnimeDetailsModel {
+    fn from(source: &AnimeDetails) -> Self {
+        Self::new(
+            &source.title,
+            &source.desc,
+            source
+                .eps
+                .clone()
+                .into_iter()
+                .map(EpisodeModel::from)
+                .collect(),
+            source.ident(),
+        )
+    }
+}
+
+impl From<AnimeDetailsModel> for AnimeDetails {
+    fn from(source: AnimeDetailsModel) -> Self {
+        Self::new(
+            &source.title,
+            &source.desc,
+            source.eps.into_iter().map(Episode::from).collect(),
+            &source.ident,
+        )
+    }
+}
+
 /// An anime episode model
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EpisodeModel {
     /// Episode title
     pub title: String,
@@ -154,6 +243,12 @@ impl From<&Episode> for EpisodeModel {
     }
 }
 
+impl From<Episode> for EpisodeModel {
+    fn from(source: Episode) -> Self {
+        Self::new(&source.title, source.ident(), source.ep_number)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs::File, io::Read};
@@ -199,5 +294,24 @@ mod tests {
                 EpisodeModel::new("Episode 1 title", "some-ident", 1)
             ]
         );
+    }
+
+    #[test]
+    fn should_parse_anime_page_into_anime_details_model() {
+        let html = fixture("some-anime-episode-1.html");
+        let result = AnimeDetailsModel::from_html(&html).unwrap();
+
+        assert_eq!(
+            result,
+            AnimeDetailsModel::new(
+                "Anime title",
+                "Multiline\n\ndescription",
+                vec![
+                    EpisodeModel::new("Episode 2 title", "some-ident", 2),
+                    EpisodeModel::new("Episode 1 title", "some-ident", 1),
+                ],
+                "some-ident",
+            )
+        )
     }
 }

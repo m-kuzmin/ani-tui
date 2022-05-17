@@ -51,7 +51,10 @@ impl AnimeRepositoryContract for AnimeRepository {
     }
 
     async fn get_anime_details(&self, anime: &AnimeSearchItem) -> Option<AnimeDetails> {
-        todo!()
+        self.gogo_play
+            .get_anime_details(&anime.into())
+            .await
+            .map(AnimeDetails::from)
     }
 }
 
@@ -62,9 +65,9 @@ mod tests {
     use mockall::predicate::eq;
 
     use crate::features::watch_anime::{
-        data::models::{AnimeSearchItemModel, EpisodeModel},
+        data::models::{AnimeDetailsModel, AnimeSearchItemModel, EpisodeModel},
         domain::{
-            entities::{AnimeSearchItem, Episode},
+            entities::{AnimeDetails, AnimeSearchItem, Episode},
             repositories::AnimeRepositoryContract,
         },
     };
@@ -162,5 +165,39 @@ mod tests {
             .unwrap();
 
         assert_eq!(&result, "some/link");
+    }
+
+    #[tokio::test]
+    async fn should_give_anime_details_from_gogoplay() {
+        let mut mock_datasource = GoGoPlayDataSource::new();
+
+        mock_datasource
+            .expect_get_anime_details()
+            .times(1)
+            .with(eq(AnimeSearchItemModel::new("some title", "some-ident")))
+            .returning(|_| {
+                Some(AnimeDetailsModel::new(
+                    "some title",
+                    "some description",
+                    vec![EpisodeModel::new("some title", "some ident", 1)],
+                    "some-ident",
+                ))
+            });
+
+        let repo = AnimeRepository::new(Arc::new(mock_datasource));
+        let result = repo
+            .get_anime_details(&AnimeSearchItem::new("some title", "some-ident"))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result,
+            AnimeDetails::new(
+                "some title",
+                "some description",
+                vec![Episode::new("some title", "some ident", 1)],
+                "some-ident"
+            )
+        );
     }
 }
