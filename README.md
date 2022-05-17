@@ -6,7 +6,10 @@ AniTUI attemts to have all the features of `ani-cli` while adding some more inte
 
 # Features
 
+## CLI
+
 - Searching on <https://goload.pro>
+- Getting information about an anime such as its description and episode list
 
 # Documentation
 
