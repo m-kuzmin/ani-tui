@@ -35,6 +35,8 @@ pub struct AnimeDetails {
     pub title: String,
     /// Description
     pub desc: String,
+    /// List of anime episodes
+    pub eps: Vec<Episode>,
 
     /// From anime model
     #[doc(hidden)]
@@ -43,17 +45,18 @@ pub struct AnimeDetails {
 
 impl AnimeDetails {
     /// Creates a new instance
-    pub fn new(title: &str, desc: &str, ident: &str) -> Self {
+    pub fn new(title: &str, desc: &str, eps: Vec<Episode>, ident: &str) -> Self {
         Self {
             title: title.to_string(),
             desc: desc.to_string(),
             _ident: ident.to_string(),
+            eps,
         }
     }
 }
 
 /// Stores information about an episode
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Episode {
     /// Episode's title
     pub title: String,

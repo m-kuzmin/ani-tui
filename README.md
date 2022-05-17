@@ -20,7 +20,7 @@ Not yet. For a `0.1.0` I would like to have most `ani-cli` features complete, su
 
 - [x] Searching by title
 - [x] Episode list
-- [ ] Description
+- [x] Description
 - [ ] Watching anime in mpv
 
 ---

@@ -189,7 +189,6 @@ mod tests {
     async fn should_get_anime_details() {
         let mut mock_repo = AnimeRepository::new();
 
-        const number_of_eps: usize = 1;
         mock_repo
             .expect_get_anime_details()
             .times(1)
@@ -198,6 +197,7 @@ mod tests {
                 Some(AnimeDetails::new(
                     "some title",
                     "some description",
+                    vec![Episode::new("some title", "some-ident", 1)],
                     "some-ident",
                 ))
             });
@@ -211,7 +211,12 @@ mod tests {
 
         assert_eq!(
             result,
-            AnimeDetails::new("some title", "some description", "some-ident")
+            AnimeDetails::new(
+                "some title",
+                "some description",
+                vec![Episode::new("some title", "some-ident", 1)],
+                "some-ident"
+            )
         );
     }
 }
