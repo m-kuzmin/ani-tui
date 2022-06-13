@@ -1,10 +1,10 @@
 # AniTUI
 
-An app to watch your anime from the shell.
+An app to watch anime from the shell.
 
 While `ani-cli` is pretty good, it aims to be minimalistic. This has compromized some functionality.
 
-AniTUI attemts to have all the features of `ani-cli` while adding some more interactivity.
+AniTUI attemts to have all the features of `ani-cli` while adding some more interactivity such as TUI. However the TUI interface is not yet implemented, the CLI version is just as powerfull as `ani-cli`.
 
 # `man ani-tui`
 
@@ -81,16 +81,7 @@ First argument is anime identifier and the other one is the episode number. This
 
 - Command line options are automatically documented via `clap`. Do `--help` or `-h` to read a short manual.
 
-- Code documentation is avaliable via `cargo doc`
-
-# When is this going to crates.io?
-
-Not yet. For a `0.1.0` I would like to have most `ani-cli` features complete, such as:
-
-- [x] Searching by title
-- [x] Episode list
-- [x] Description
-- [x] Watching anime in mpv
+- Code documentation is avaliable via [`cargo doc`](https://docs.rs/ani-tui)
 
 ---
 
