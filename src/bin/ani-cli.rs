@@ -1,4 +1,4 @@
-use std::process::exit;
+use std::process::{exit, Command, Stdio};
 
 use ani_tui::{
     core::{
@@ -7,8 +7,8 @@ use ani_tui::{
         Usecase,
     },
     features::watch_anime::domain::{
-        entities::AnimeSearchItem,
-        usecases::{GetAnimeDetails, GetEpisodesOfAnime, SearchAnime},
+        entities::{AnimeSearchItem, Episode},
+        usecases::{GetAnimeDetails, GetEpisodesOfAnime, GetStreamingLink, SearchAnime},
     },
 };
 use clap::Parser;
@@ -78,6 +78,26 @@ async fn main() {
                 );
             }
             println!()
+        }
+
+        Commands::Watch { ident, ep } => {
+            let usecase = GetStreamingLink::new(Dependency::resolve());
+            let result = usecase.call(&Episode::new("", &ident, ep)).await;
+
+            if result.is_none() {
+                println!("Error: Nothing found.");
+                exit(1);
+            }
+            let result = result.unwrap();
+            println!("Launching MPV");
+
+            Command::new("mpv")
+                .arg(result)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
         }
     }
 }

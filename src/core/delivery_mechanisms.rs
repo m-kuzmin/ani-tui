@@ -14,8 +14,16 @@ pub type QueryParams = Option<Vec<(String, String)>>;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait WebClient {
-    /// Makes a get request. An address is encoded as a [`Link`]
+    /// Makes a get request.
     async fn get(&self, url: &str, query_param: QueryParams) -> Option<String>;
+
+    /// Makes a get request with additional headers.
+    async fn get_with_headers(
+        &self,
+        url: &str,
+        query_param: QueryParams,
+        headers: QueryParams,
+    ) -> Option<String>;
 }
 
 /// Implements a [`WebClient`] with local web page caching.
@@ -64,6 +72,43 @@ impl WebClient for CachingWebClient {
             .put((url.to_string(), query_params), responce.clone());
         Some(responce.to_string())
     }
+
+    async fn get_with_headers(
+        &self,
+        url: &str,
+        query_params: QueryParams,
+        headers: QueryParams,
+    ) -> Option<String> {
+        if let Some(cached) = self
+            .cache
+            .lock()
+            .await
+            .borrow()
+            .get(&(url.to_string(), query_params.clone()))
+        {
+            return Some(cached.to_string());
+        }
+
+        let mut rq_builder = self.client.get(url);
+        if let Some(ref query_params) = query_params {
+            rq_builder = rq_builder.query(query_params);
+        }
+        if let Some(ref headers) = headers {
+            // TODO refactor this for loop
+            for (key, value) in headers {
+                rq_builder = rq_builder.header(key, value);
+            }
+        }
+
+        let responce = rq_builder.send().await.ok()?.text().await.ok()?;
+
+        self.cache
+            .lock()
+            .await
+            .borrow_mut()
+            .put((url.to_string(), query_params), responce.clone());
+        Some(responce.to_string())
+    }
 }
 
 #[cfg(test)]
@@ -75,8 +120,9 @@ mock!(pub Client {
 
 #[cfg(test)]
 mock!(pub RequestBuilder {
-    pub fn query(&self, query: &Vec<(String, String)>) -> Self;
+    pub fn query(self, query: &Vec<(String, String)>) -> Self;
     pub async fn send(&self) -> Result<MockResponce, ()>;
+    pub fn header(self, Vec<(String, String)>) -> Self;
 });
 
 #[cfg(test)]

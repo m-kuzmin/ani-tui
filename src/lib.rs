@@ -14,6 +14,9 @@ extern crate async_trait;
 #[macro_use(Subcommand, Args)]
 extern crate clap;
 
+#[macro_use(with)]
+extern crate with_macro;
+
 #[cfg(test)]
 #[macro_use(automock, mock)]
 extern crate mockall;

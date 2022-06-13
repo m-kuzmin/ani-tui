@@ -1,4 +1,12 @@
-use std::sync::Arc;
+
+use easy_scraper::Pattern;
+use std::io::Write;
+use std::{
+    process::{Command, Stdio},
+    sync::Arc,
+    thread::spawn,
+};
+
 
 use super::models::{AnimeDetailsModel, AnimeSearchItemModel, EpisodeModel};
 use crate::core::{delivery_mechanisms::WebClient, Model};
@@ -69,8 +77,131 @@ impl GoGoPlayInterface for GoGoPlayDataSource {
         Vec::<EpisodeModel>::from_html(&html)
     }
 
-    async fn get_streaming_link(&self, _ep: &EpisodeModel) -> Option<String> {
-        unimplemented!("Get streaming link")
+    async fn get_streaming_link(&self, ep: &EpisodeModel) -> Option<String> {
+        //! Isn't tested because this implementaion is prone to frequent updates
+
+        let html = self
+            .client
+            .get(
+                &format!(
+                    "https://goload.pro/videos/{title}-episode-{ep_number}",
+                    title = ep.ident,
+                    ep_number = ep.ep_number
+                ),
+                None,
+            )
+            .await?;
+
+        let iframe_link = || -> Option<String> {
+            let pattern = Pattern::new(r#"<iframe src="{{link}}" allowfullscreen="true" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" />"#).unwrap();
+            Some("https:".to_string() + &pattern.matches(&html).get(0)?["link"])
+        };
+        let html = self.client.get(&iframe_link()?, None).await?;
+
+        let (token, secret_key, second_key, iv, id) =
+            || -> Option<(String, String, String, String, String)> {
+                let pattern = Pattern::new(r#"
+<head>
+   <script type="text/javascript" src="https://goload.pro/js/crypto-js/crypto-js.js?v=9.988" data-name="episode" data-value="{{token}}"></script>
+</head>
+<body class="container-{{secret_key}}">
+    <input type="hidden" id="id" value="{{id}}">
+    <!--
+        Must have all inputs, otherwise easy_scraper wont match
+    -->
+    <input type="hidden" id="title" value="{{_}}">
+    <input type="hidden" id="typesub" value="{{_}}">
+    <div class="wrapper container-{{iv}}">
+        <div class="videocontent videocontent-{{second_key}}">
+        </div>
+    </div>
+</body>
+"#).unwrap();
+
+                let matches = pattern.matches(&html);
+                let matches = matches.get(0)?;
+                Some((
+                    matches["token"].clone(),
+                    matches["secret_key"].clone(),
+                    matches["second_key"].clone(),
+                    matches["iv"].clone(),
+                    matches["id"].clone(),
+                ))
+            }()?;
+
+        let token = base64::decode(token).ok()?;
+        let secret_key = hex::encode(&secret_key.into_bytes());
+        let id_vecu8 = id.as_bytes().to_vec();
+        let second_key = hex::encode(&second_key.into_bytes());
+        let iv = hex::encode(&iv.into_bytes());
+
+        let mut openssl = Command::new("openssl")
+            .args(&["enc", "-d", "-aes256", "-K", &secret_key, "-iv", &iv])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .ok()?;
+        let mut stdin = openssl.stdin.take()?;
+        spawn(move || {
+            stdin.write_all(&token).ok().unwrap();
+        });
+        let token = String::from_utf8(openssl.wait_with_output().ok()?.stdout).ok()?;
+
+        let mut openssl = Command::new("openssl")
+            .args(&["enc", "-e", "-aes256", "-K", &secret_key, "-iv", &iv])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .ok()?;
+        let mut stdin = openssl.stdin.take()?;
+        spawn(move || {
+            stdin.write_all(&id_vecu8).unwrap();
+        });
+        let ajax_id = base64::encode(openssl.wait_with_output().ok()?.stdout);
+
+        let json = self
+            .client
+            .get_with_headers(
+                &format!(
+                    "https://goload.pro/encrypt-ajax.php?id={ajax_id}&alias={id}&{token}",
+                    ajax_id = ajax_id,
+                    id = id,
+                    token = &token.split_at(token.find("token")?).1,
+                ),
+                None,
+                Some(
+                    [(
+                        String::from("X-Requested-With"),
+                        String::from("XMLHttpRequest"),
+                    )]
+                    .to_vec(),
+                ),
+            )
+            .await?;
+        let regex = regex::Regex::new(r#""data":"(.*?)""#).unwrap();
+        let json = regex.captures(&json)?.get(1)?.as_str().replace("\\", "");
+
+        let json = base64::decode(json).ok()?;
+
+        let mut openssl = Command::new("openssl")
+            .args(&["enc", "-d", "-aes256", "-K", &second_key, "-iv", &iv])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .ok()?;
+        let mut stdin = openssl.stdin.take()?;
+        spawn(move || {
+            stdin.write_all(&json).ok().unwrap();
+        });
+
+        let json = String::from_utf8(openssl.wait_with_output().ok()?.stdout).ok()?;
+        let regex = regex::Regex::new(r#""file":"(.*?)""#).unwrap();
+        let link = regex.captures(&json)?.get(1)?.as_str().replace("\\", "");
+
+        Some(link)
     }
 
     async fn get_anime_details(&self, anime: &AnimeSearchItemModel) -> Option<AnimeDetailsModel> {

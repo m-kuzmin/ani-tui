@@ -29,6 +29,13 @@ pub enum Commands {
         /// An anime identifier
         ident: String,
     },
+    /// Watch episode in MPV
+    Watch {
+        /// Anime identifier
+        ident: String,
+        /// Episode number
+        ep: usize,
+    },
 }
 
 /// An anime title + episode number
