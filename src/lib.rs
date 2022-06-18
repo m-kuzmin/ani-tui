@@ -3,11 +3,17 @@
 #![doc = include_str!("../README.md")]
 #![allow(unused_macros)]
 
-/// Provides utility functionality used throughout the crate
-pub mod core;
+/// Command line interface
+pub mod cli_args;
 
-/// Implementation of app's features
-pub mod features;
+/// Interface to anime data sources such as searching and getting a watch link
+pub mod anime_repo;
+
+/// Contains Website specific APIs and their repo impls
+pub mod websites {
+    /// <https://goload.pro> API
+    pub mod gogoplay;
+}
 
 #[macro_use(async_trait)]
 extern crate async_trait;

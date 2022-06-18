@@ -20,7 +20,7 @@ pub enum Commands {
         title: String,
     },
     /// Get a list of episodes for anime identifier.
-    ListEps {
+    EpCount {
         /// An anime identifier
         ident: String,
     },

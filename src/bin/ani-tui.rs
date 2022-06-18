@@ -1,98 +1,79 @@
-use std::process::{exit, Command, Stdio};
+use ani_tui::{anime_repo::AnimeRepository, cli_args::*, websites::gogoplay::*};
 
-use ani_tui::{
-    core::{
-        cli_args::{Args, Commands},
-        dependency_resolution::{Dependency, Resolve},
-        Usecase,
-    },
-    features::watch_anime::domain::{
-        entities::{AnimeSearchItem, Episode},
-        usecases::{GetAnimeDetails, GetEpisodesOfAnime, GetStreamingLink, SearchAnime},
-    },
-};
 use clap::Parser;
+use std::process::{Command, Stdio};
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
+    let repo = Gogoplay::new();
+
     match args.command {
         Commands::Search { title } => {
-            let usecase = SearchAnime::new(Dependency::resolve());
-            let results = usecase.call(&title).await.unwrap();
+            let results = repo.search(&title).await.unwrap();
 
-            println!();
             for result in results {
                 println!(
-                    " • {title}\n   {ident}\n",
-                    ident = result.ident(),
+                    r#"
+ • {title}
+   {ident}"#,
+                    ident = result.link.as_repr(),
                     title = result.title
                 );
             }
         }
-        Commands::ListEps { ident } => {
-            let usecase = GetEpisodesOfAnime::new(Dependency::resolve());
-            let results = usecase.call(&AnimeSearchItem::new("", &ident)).await;
-
-            if results.is_none() {
-                println!("Error: Nothing found.");
-                exit(1);
-            }
-
-            let results = results.unwrap();
-
-            println!();
-            for result in results {
-                println!(
-                    " {number:>3} {title}",
-                    number = result.ep_number,
-                    title = result.title,
-                );
-            }
-            println!()
+        Commands::EpCount { ident } => {
+            println!(
+                r#""{}" has {} episodes."#,
+                repo.detail(Identifier::from_repr(&ident).unwrap())
+                    .await
+                    .unwrap()
+                    .anime_title,
+                repo.list_eps(Identifier::from_repr(&ident).unwrap())
+                    .await
+                    .unwrap()
+                    .len(),
+            );
         }
 
         Commands::Detail { ident } => {
-            let usecase = GetAnimeDetails::new(Dependency::resolve());
-            let result = usecase.call(&AnimeSearchItem::new("", &ident)).await;
-
-            if result.is_none() {
-                println!("Error: Nothing found.");
-                exit(1);
-            }
-            let result = result.unwrap();
+            let detail = repo
+                .detail(Identifier::from_repr(&ident).unwrap())
+                .await
+                .unwrap();
+            let ep_count = repo
+                .list_eps(Identifier::from_repr(&ident).unwrap())
+                .await
+                .unwrap()
+                .len();
 
             println!(
-                "\n {title}\n [{ident}]\n\n{desc}",
-                ident = result.ident(),
-                title = result.title,
-                desc = result.desc,
-            );
+                r#"{title}
+{eps} episodes, {ident}
 
-            println!();
-            for ep in result.eps {
-                println!(
-                    " {number:>3} {title}",
-                    number = ep.ep_number,
-                    title = ep.title,
-                );
-            }
-            println!()
+{description}"#,
+                title = detail.anime_title,
+                ident = ident,
+                eps = ep_count,
+                description = detail.description
+            );
         }
 
         Commands::Watch { ident, ep } => {
-            let usecase = GetStreamingLink::new(Dependency::resolve());
-            let result = usecase.call(&Episode::new("", &ident, ep)).await;
+            let link = repo
+                .watch_link(
+                    repo.list_eps(Identifier::from_repr(&ident).unwrap())
+                        .await
+                        .unwrap()[ep - 1]
+                        .link
+                        .clone(),
+                )
+                .await
+                .unwrap();
 
-            if result.is_none() {
-                println!("Error: Nothing found.");
-                exit(1);
-            }
-            let result = result.unwrap();
             println!("Launching MPV");
-
             Command::new("mpv")
-                .arg(result)
+                .arg(link)
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
