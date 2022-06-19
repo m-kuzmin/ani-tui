@@ -25,10 +25,13 @@ async fn main() {
         Commands::EpCount { ident } => {
             println!(
                 r#""{}" has {} episodes."#,
-                repo.detail(Identifier::from_repr(&ident).unwrap())
-                    .await
-                    .unwrap()
-                    .anime_title,
+                repo.detail(EpisodeLink {
+                    link: Identifier::from_repr(&ident).unwrap(),
+                    title: String::from("")
+                })
+                .await
+                .unwrap()
+                .anime_title,
                 repo.list_eps(Identifier::from_repr(&ident).unwrap())
                     .await
                     .unwrap()
@@ -38,7 +41,10 @@ async fn main() {
 
         Commands::Detail { ident } => {
             let detail = repo
-                .detail(Identifier::from_repr(&ident).unwrap())
+                .detail(EpisodeLink {
+                    link: Identifier::from_repr(&ident).unwrap(),
+                    title: String::from(""),
+                })
                 .await
                 .unwrap();
             let ep_count = repo
@@ -65,7 +71,6 @@ async fn main() {
                     repo.list_eps(Identifier::from_repr(&ident).unwrap())
                         .await
                         .unwrap()[ep - 1]
-                        .link
                         .clone(),
                 )
                 .await

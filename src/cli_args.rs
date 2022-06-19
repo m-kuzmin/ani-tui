@@ -1,4 +1,4 @@
-pub use clap::Parser;
+use clap::Parser;
 
 #[derive(Parser)]
 #[clap(author, version)]
@@ -36,13 +36,4 @@ pub enum Commands {
         /// Episode number
         ep: usize,
     },
-}
-
-/// An anime title + episode number
-#[derive(Args)]
-pub struct Anime {
-    /// Anme title
-    pub anime: String,
-    /// Aniem episode
-    pub ep: usize,
 }

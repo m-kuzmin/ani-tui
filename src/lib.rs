@@ -1,15 +1,18 @@
+/*! # AniTUI - An app for watching anime in MPV
+* See readme on github or crates.io for usage documentation.
+*/
+
 #![deny(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
-#![doc = include_str!("../README.md")]
 #![allow(unused_macros)]
 
-/// Command line interface
+/// Abstracts the CLI API
 pub mod cli_args;
 
-/// Interface to anime data sources such as searching and getting a watch link
+/// Contains anime data source abstactions
 pub mod anime_repo;
 
-/// Contains Website specific APIs and their repo impls
+/// Contains implementations of [`anime_repo`]
 pub mod websites {
     /// <https://goload.pro> API
     pub mod gogoplay;
@@ -18,7 +21,7 @@ pub mod websites {
 #[macro_use(async_trait)]
 extern crate async_trait;
 
-#[macro_use(Subcommand, Args)]
+#[macro_use(Subcommand)]
 extern crate clap;
 
 #[macro_use(with)]

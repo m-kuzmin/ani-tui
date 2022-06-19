@@ -45,15 +45,15 @@ impl AnimeRepository for Gogoplay {
     async fn search(&self, query: &str) -> anime_repo::Result<Self::SearchResult> {
         self.search(query)
             .await
-            .ok_or(AnimeRepositoryError::ConnectionError)
+            .ok_or(AnimeRepositoryError::DatasourceError)
     }
 
     async fn list_eps(&self, url: Self::Identifier) -> anime_repo::Result<Vec<Self::Episode>> {
         Ok(self.episode_page(url).await?.ep_list)
     }
 
-    async fn detail(&self, url: Self::Identifier) -> anime_repo::Result<Self::Detail> {
-        let content = self.episode_page(url).await?;
+    async fn detail(&self, ep: Self::Episode) -> anime_repo::Result<Self::Detail> {
+        let content = self.episode_page(ep.link).await?;
         Ok(Detail {
             anime_title: content.anime_title,
             description: content.description,
@@ -61,8 +61,8 @@ impl AnimeRepository for Gogoplay {
     }
 
     /// Returns a link to the iframe
-    async fn watch_link(&self, ident: Self::Identifier) -> anime_repo::Result<Self::Link> {
-        let iframe_link = self.episode_page(ident).await?.iframe;
+    async fn watch_link(&self, ep: Self::Episode) -> anime_repo::Result<Self::Link> {
+        let iframe_link = self.episode_page(ep.link).await?.iframe;
         let iframe = self.iframe_page(&iframe_link).await?;
 
         enum Mode {
@@ -347,7 +347,8 @@ pub struct Identifier {
     pub ep: usize,
 }
 
-const REPR_PREFIX: &'static str = "GLP-1";
+/// A source prefix in the string representation of Identifier
+pub const REPR_PREFIX: &'static str = "GLP-1";
 
 impl Identifier {
     /// Takes a URL link `"https://goload.pro/..."` and returns a parsed object
@@ -396,21 +397,11 @@ impl Identifier {
     }
 }
 
-#[test]
-fn link_to_ident() {
-    assert_eq!(
-        Identifier {
-            id: String::from("id"),
-            ep: 1
-        },
-        Identifier::from_link("https://goload.pro/videos/id-episode-1").unwrap()
-    );
-}
-
-type SearchPage = Vec<EpisodeLink>;
+/// A search page type
+pub type SearchPage = Vec<EpisodeLink>;
 
 /// An element of a result list on a search page
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EpisodeLink {
     /// Title of the element
     pub title: String,
@@ -458,7 +449,7 @@ pub enum QueryError {
 impl From<QueryError> for AnimeRepositoryError {
     fn from(source: QueryError) -> Self {
         match source {
-            QueryError::ConnectionError => AnimeRepositoryError::ConnectionError,
+            QueryError::ConnectionError => AnimeRepositoryError::DatasourceError,
             QueryError::InvalidLink => AnimeRepositoryError::Unsupported,
             QueryError::ParsingError => AnimeRepositoryError::Unsupported,
         }

@@ -28,6 +28,8 @@ Watch an episode. Replace ~ID~ and ~1~ (episode number) with your values.
 
 You can use either ~help command~, ~-h~ or ~--help~ to get a help message explaining how to use AniTUI.
 
+-----
+
 * Contributing
 
 1. View open issues/projects or create your own issue
