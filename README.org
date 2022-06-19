@@ -34,11 +34,10 @@ You can use either ~help command~, ~-h~ or ~--help~ to get a help message explai
 
 1. View open issues/projects or create your own issue
 2. Fork
-2. Write a test → see the test fail
-3. Make the test pass
+3. Write some code
 4. Refactor
-4. Write docs
-3. Make a pull request explaining the changes
+5. Write docs
+6. Make a pull request explaining the changes
 
 ** Branch guide
 
