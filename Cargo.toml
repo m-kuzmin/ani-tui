@@ -7,10 +7,10 @@ description = "Watch anime from the shell via mpv"
 documentation = "https://docs.rs/ani-tui"
 repository = "https://github.com/m-kuzmin/ani-tui"
 edition = "2021"
-readme = "README.md"
+readme = "README.org"
 license = "GPL-3.0"
 categories = ["command-line-utilities"]
-include = ["/src", "/tests", "/README.md", "Cargo.lock", "Cargo.toml", "LICENSE"]
+include = ["/src", "/tests", "/README.org", "Cargo.lock", "Cargo.toml", "LICENSE"]
 
 [dependencies]
 clap = { version = "3", features = ["derive"] }
